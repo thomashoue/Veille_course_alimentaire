@@ -343,3 +343,47 @@ class TestOpenTabs:
         # Action n'a pas d'URL de recherche drive.
         code = main(["open-tabs", "--store", "action_pace", "--script", str(tmp_path / "x.sh")])
         assert code == 1
+
+
+class TestReview:
+    """La revue ne remonte que les doutes, avec de quoi les lever sur la fiche."""
+
+    def _run(self, tmp_path, rows, prompt=False):
+        import json as json_module
+
+        from src.cli import main
+
+        path = tmp_path / "m.json"
+        path.write_text(json_module.dumps(rows), encoding="utf-8")
+        argv = ["review", "--manual", str(path)]
+        if prompt:
+            argv.append("--prompt")
+        return main(argv)
+
+    def test_signale_base_de_poids_et_format(self, config, tmp_path, capsys):
+        code = self._run(tmp_path, [
+            {"store_id": "leclerc_pleumeleuc", "basket_item_id": "conserve_poisson",
+             "product_label": "Sardines 135g", "price_eur": 1.89, "verified_in_drive": True},
+            {"store_id": "leclerc_pleumeleuc", "basket_item_id": "steak_hache",
+             "product_label": "Steak haché promo", "price_eur": 4.99, "verified_in_drive": True},
+        ])
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "P5" in out and "P4" in out
+
+    def test_rien_a_verifier_quand_tout_est_net(self, config, tmp_path, capsys):
+        self._run(tmp_path, [
+            {"store_id": "leclerc_pleumeleuc", "basket_item_id": "lait_demi_ecreme",
+             "product_label": "Lait demi-écrémé 6x1L", "price_eur": 5.28, "verified_in_drive": True},
+        ])
+        assert "Aucun doute" in capsys.readouterr().out
+
+    def test_prompt_extension_liste_les_url(self, config, tmp_path, capsys):
+        self._run(tmp_path, [
+            {"store_id": "leclerc_pleumeleuc", "basket_item_id": "steak_hache",
+             "product_label": "Steak promo", "price_eur": 4.99, "verified_in_drive": True,
+             "source_url": "https://x/produit/steak"},
+        ], prompt=True)
+        out = capsys.readouterr().out
+        assert "Claude dans Chrome" in out
+        assert "https://x/produit/steak" in out

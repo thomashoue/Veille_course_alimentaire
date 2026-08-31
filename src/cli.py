@@ -353,6 +353,75 @@ def cmd_paste(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review(args: argparse.Namespace) -> int:
+    """Liste ce qui mérite une vérification sur la fiche produit — et rien d'autre.
+
+    Le pipeline sait dire quand il doute : prix incohérent, format ou base de
+    poids absents, produit jamais confirmé en drive. Cette commande rassemble
+    ces cas, avec l'URL quand on l'a, et un prompt prêt pour Claude dans Chrome :
+    l'extension ouvre ces fiches (dans votre navigateur, non bloqué), et rend
+    du JSON corrigé que « paste » réabsorbe. On ne vérifie que les doutes.
+    """
+    from .normalize import normalize
+    from .pipeline import load_observations
+    from .validate import validate
+
+    config = get_config(args.config)
+    observations = load_observations(args.manual, config)
+
+    doutes: list[tuple[str, PriceObservation]] = []
+    for obs in observations:
+        if obs.basket_item_id not in config.items:
+            continue
+        normalize(obs, config)
+        verdict = validate(obs, config)
+        raisons = []
+        if obs.suspect_reason:
+            raisons.append(obs.suspect_reason)
+        # Règles « à confirmer » : format absent (P4), base de poids (P5),
+        # avantage carte hors fenêtre (P6), promo trompeuse (P7), non vérifié (C1).
+        for rule, reason in zip(verdict.rules, verdict.reasons):
+            if rule in ("P4", "P5", "P6", "P7", "C1", "C-CHECK"):
+                raisons.append(f"[{rule}] {reason}")
+        if raisons:
+            doutes.append(("; ".join(raisons), obs))
+
+    if not doutes:
+        print("Aucun doute : tous les relevés sont exploitables tels quels.")
+        return 0
+
+    print(f"{len(doutes)} relevé(s) à vérifier sur la fiche produit :\n")
+    urls = []
+    for raison, obs in doutes:
+        store = config.store(obs.store_id)
+        print(f"  · {config.item(obs.basket_item_id).label} — {obs.product_label[:50]}")
+        print(f"    {store.name} · {raison}")
+        if obs.source_url:
+            print(f"    {obs.source_url}")
+            urls.append(obs.source_url)
+        print()
+
+    if args.prompt:
+        print("=" * 68)
+        print("PROMPT pour Claude dans Chrome (copier-coller) :")
+        print("=" * 68)
+        print(
+            "Ouvre chacune de ces fiches produit (je suis connecté) et relève "
+            "SANS CALCULER : libellé exact, prix de la boîte affiché, grammage "
+            "(en précisant « net égoutté » si mentionné), mécanique promo "
+            "éventuelle. Rends un tableau JSON, un objet par produit, avec les "
+            "champs store_id, basket_item_id, product_label, price_eur, "
+            "pack_size, pack_unit, weight_basis, verified_in_drive:true, "
+            'source:"drive". URLs :'
+        )
+        for url in urls or ["(aucune URL relevée — ouvre les fiches à la main)"]:
+            print(f"  {url}")
+    else:
+        print("Ajoutez --prompt pour un texte prêt à coller dans Claude dans Chrome.")
+    print("\nPuis : python -m src.cli paste   (recolle le JSON corrigé)")
+    return 0
+
+
 def cmd_compare(args: argparse.Namespace) -> int:
     """Analyse un panier multi-enseignes : face-à-face par article + affectation.
 
@@ -687,6 +756,15 @@ def build_parser() -> argparse.ArgumentParser:
     open_tabs.add_argument("--bulk", action="store_true", help="seulement les postes à stocker")
     open_tabs.add_argument("--script", help="écrire un .bat/.sh rejouable au lieu d'ouvrir")
     open_tabs.set_defaults(func=cmd_open_tabs)
+
+    review = sub.add_parser(
+        "review",
+        help="lister les relevés douteux à vérifier sur la fiche produit (+ prompt extension)",
+    )
+    review.add_argument("--manual", required=True, help="fichier de relevés (data/manual.json)")
+    review.add_argument("--prompt", action="store_true",
+                        help="afficher un prompt prêt pour Claude dans Chrome")
+    review.set_defaults(func=cmd_review)
 
     compare = sub.add_parser(
         "compare",

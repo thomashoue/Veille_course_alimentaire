@@ -73,3 +73,19 @@ calcul fait en chemin.
 - Budget d'usage : une session de relevé coûte des actions d'extension ;
   le Ctrl+S + `parse-page` reste la voie gratuite et déterministe. Les deux
   produisent exactement le même rapport, choisissez selon l'humeur du vendredi.
+
+
+## Lever les doutes ciblés
+
+Quand un run laisse des relevés incertains (base de poids absente, format non
+précisé, prix incohérent, produit non confirmé), inutile de tout refaire :
+
+```bash
+python -m src.cli review --manual data/manual.json --prompt
+```
+
+La commande liste UNIQUEMENT les doutes, avec l'URL de la fiche produit quand
+elle est connue, et un prompt prêt à coller. L'extension ouvre ces quelques
+fiches — la fiche produit est propre et structurée, là où la liste tronque —
+relève le détail exact, et `paste` réabsorbe le JSON corrigé. On ne dépense la
+lecture par extension que sur ce qui doute, jamais sur tout le panier.
