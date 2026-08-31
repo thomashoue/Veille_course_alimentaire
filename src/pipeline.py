@@ -179,6 +179,7 @@ def run(
     manual_file: Path | str | None = None,
     pickup_date: date | None = None,
     use_drive: bool = True,
+    collect_sources: bool | None = None,
     offline: bool = False,
     headless: bool = True,
     fixtures: dict[str, dict[str, list[DriveProduct]]] | None = None,
@@ -193,7 +194,12 @@ def run(
     if not collected:
         if manual_file:
             collected += load_observations(manual_file, config)
-        collected += collect(config, item_ids, offline=offline)
+        # Fournir des relevés est un acte délibéré : on n'y ajoute une collecte
+        # réseau (plusieurs minutes) que si elle est demandée explicitement.
+        if collect_sources is None:
+            collect_sources = not collected
+        if collect_sources:
+            collected += collect(config, item_ids, offline=offline)
 
     kept, _ = shortlist(collected, config, pickup_date)
 

@@ -119,3 +119,63 @@ class TestDiagnostic:
         assert "houe.thomas@gmail.com" not in sample
         assert "1234567890" not in sample
         assert "4,80 €" in sample          # le prix, lui, doit rester lisible
+
+
+class TestGabaritLeclerc:
+    """Gabarit réel de Leclerc Drive, relevé le 2026-08-31 sur une page de 822 Ko.
+
+    Trois pièges y coexistent : le prix découpé en deux éléments, une vignette
+    non fermée, et des produits sponsorisés qui ne sont pas l'assortiment.
+    """
+
+    @pytest.fixture
+    def leclerc_html(self):
+        return (FIXTURES / "leclerc_drive_tile.html").read_text(encoding="utf-8")
+
+    def test_le_prix_decoupe_est_lu_en_entier(self, leclerc_html):
+        products, _ = extract_products(leclerc_html)
+        lait = next(p for p in products if "Eco+" in p.label)
+        # 5 € et ,52 sont deux éléments distincts : lire 5,00 € coûterait
+        # 52 centimes à chaque relevé.
+        assert lait.price_eur == pytest.approx(5.52)
+
+    def test_le_libelle_est_debarrasse_du_bruit(self, leclerc_html):
+        products, _ = extract_products(leclerc_html)
+        lait = next(p for p in products if "Eco+" in p.label)
+        assert lait.label == "Lait demi-écrémé Eco+"
+
+    def test_vignette_non_fermee_quand_meme_lue(self, leclerc_html):
+        # La deuxième vignette n'a pas de </div> : elle doit ressortir malgré tout.
+        products, _ = extract_products(leclerc_html)
+        assert any("Croquettes" in p.label for p in products)
+
+    def test_les_sponsorises_sont_ecartes(self, leclerc_html):
+        products, _ = extract_products(leclerc_html)
+        assert not any("Lactel" in p.label for p in products)
+
+    def test_le_format_est_deduit_du_prix_au_litre(self, leclerc_html, config):
+        store = config.store("leclerc_pleumeleuc")
+        observations, report = observations_from_page(leclerc_html, store, config)
+        lait = next(o for o in observations if "Eco+" in o.product_label)
+        # Le libellé ne dit pas « 6x1L » ; 5,52 ÷ 0,92 le retrouve.
+        assert lait.pack_size == pytest.approx(6.0)
+        assert lait.pack_unit == "l"
+        assert report["packs_derived_from_unit_price"] >= 1
+        assert "déduit du prix unitaire" in " ".join(lait.notes)
+
+    def test_le_prix_normalise_tombe_juste(self, leclerc_html, config):
+        from src.normalize import normalize
+
+        store = config.store("leclerc_pleumeleuc")
+        observations, _ = observations_from_page(leclerc_html, store, config)
+        lait = next(o for o in observations if "Eco+" in o.product_label)
+        normalize(lait, config)
+        assert lait.unit_price == pytest.approx(0.92)
+
+    def test_le_diagnostic_designe_la_bonne_classe(self, leclerc_html):
+        from src.drive.offline import analyze_page
+
+        candidates = analyze_page(leclerc_html)["candidates"]
+        # La classe est rendue telle quelle, pour être recopiée dans un sélecteur.
+        assert candidates[0]["class"] == "liWCRS310_Product"
+        assert candidates[0]["tag"] == "li"

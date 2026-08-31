@@ -44,6 +44,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         manual_file=args.manual,
         pickup_date=pickup,
         use_drive=not args.no_drive,
+        collect_sources=True if args.collect else None,
         offline=args.offline,
         headless=not args.headful,
         report_dir=args.out or (DATA_DIR / "reports"),
@@ -213,6 +214,7 @@ def cmd_parse_page(args: argparse.Namespace) -> int:
     out.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n{len(rows)} relevé(s) écrits dans {out}")
     print(f"Ensuite : python -m src.cli run --no-drive --manual {out}")
+    print("(ajoutez --collect pour interroger en plus les agrégateurs)")
     return 0
 
 
@@ -280,6 +282,11 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--manual", help="fichier JSON de relevés saisis à la main")
     run_parser.add_argument("--pickup", help="date de retrait (YYYY-MM-DD) pour les avantages carte")
     run_parser.add_argument("--no-drive", action="store_true", help="sauter la vérification drive")
+    run_parser.add_argument(
+        "--collect",
+        action="store_true",
+        help="interroger aussi les agrégateurs quand --manual est fourni (long)",
+    )
     run_parser.add_argument("--offline", action="store_true", help="cache uniquement, aucun réseau")
     run_parser.add_argument("--headful", action="store_true", help="navigateur visible")
     run_parser.add_argument("--out", help="répertoire de sortie des rapports")

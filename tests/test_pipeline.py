@@ -173,3 +173,38 @@ class TestReleveManuel:
         assert observations[0].price_eur == 4.59
         assert observations[0].loyalty_valid_until == date(2026, 9, 5)
         assert observations[0].verified_in_drive is True
+
+
+class TestCollecteExplicite:
+    """Fournir des relevés ne doit pas déclencher une collecte réseau."""
+
+    def test_manual_seul_ne_collecte_pas(self, config, tmp_path, monkeypatch):
+        import src.pipeline as pipeline
+
+        appels = []
+        monkeypatch.setattr(
+            pipeline, "collect", lambda *a, **k: appels.append(1) or []
+        )
+        path = tmp_path / "manual.json"
+        path.write_text(
+            '[{"store_id": "leclerc_pleumeleuc", "basket_item_id": "lait_demi_ecreme",'
+            ' "product_label": "Lait demi-écrémé 6x1L", "price_eur": 4.80,'
+            ' "verified_in_drive": true}]',
+            encoding="utf-8",
+        )
+        pipeline.run(config, manual_file=path, use_drive=False,
+                     ledger_path=tmp_path / "o.sqlite")
+        assert appels == []
+
+    def test_collecte_forcee_si_demandee(self, config, tmp_path, monkeypatch):
+        import src.pipeline as pipeline
+
+        appels = []
+        monkeypatch.setattr(
+            pipeline, "collect", lambda *a, **k: appels.append(1) or []
+        )
+        path = tmp_path / "manual.json"
+        path.write_text('[]', encoding="utf-8")
+        pipeline.run(config, manual_file=path, collect_sources=True, use_drive=False,
+                     ledger_path=tmp_path / "o.sqlite")
+        assert appels == [1]
