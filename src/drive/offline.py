@@ -342,10 +342,11 @@ def observations_from_page(
                 f"format {pack.describe()} déduit du prix unitaire affiché "
                 f"({product.unit_price_hint:g} €/{product.unit_hint_unit})"
             )
-        elif pack is not None and product.unit_price_hint:
-            ecart = _cross_check(product, pack)
-            if ecart is not None:
-                extra_notes.append(ecart)
+        suspect_reason = None
+        if pack is not None and pack is not hint and product.unit_price_hint:
+            note, suspect_reason = _cross_check(product, pack)
+            if note:
+                extra_notes.append(note)
         observations.append(
             PriceObservation(
                 store_id=store.id,
@@ -364,6 +365,7 @@ def observations_from_page(
                 banner=store.banner,
                 drive_ref=product.ref,
                 notes=[f"lu dans une page enregistrée ({method})", *extra_notes],
+                suspect_reason=suspect_reason,
             )
         )
 
@@ -454,32 +456,47 @@ def _pack_from_unit_price(product: DriveProduct):
     return Pack(rounded, unit)
 
 
-def _cross_check(product: DriveProduct, pack) -> str | None:
+def _cross_check(product: DriveProduct, pack) -> tuple[str | None, str | None]:
     """Compare notre calcul au prix unitaire affiché par l'enseigne.
 
-    Un écart notable signale soit une lecture de format erronée, soit un
-    affichage trompeur — dans les deux cas on veut le savoir, pas le masquer.
+    Renvoie ``(note, motif_suspect)``. Un petit écart se note ; un gros écart
+    disqualifie l'offre — vécu : une litière 15 L « à 1,32 € » dont 1,32 €
+    était en fait le prix AU LITRE, devenue record à 0,088 €/L dans le rapport.
     """
-    from ..units import UnknownUnit, comparable_units
+    from ..units import UnknownUnit, comparable_units, to_base
 
     try:
         if not comparable_units(product.unit_hint_unit, pack.unit):
-            return None
+            return None, None
         computed = product.price_eur / pack.total_base
+        displayed = product.unit_price_hint / to_base(1, product.unit_hint_unit)
     except (UnknownUnit, ZeroDivisionError):
-        return None
-    from ..units import to_base
-
-    displayed = product.unit_price_hint / to_base(1, product.unit_hint_unit)
+        return None, None
     if displayed <= 0:
-        return None
+        return None, None
+
     ecart = abs(computed - displayed) / displayed
     if ecart < 0.05:
-        return None
-    return (
-        f"⚠ écart de {ecart:.0%} entre notre calcul ({computed:.3f}) et le prix "
-        f"unitaire affiché ({displayed:.3f}) — format à vérifier"
+        return None, None
+    if ecart <= 0.25:
+        return (
+            f"⚠ écart de {ecart:.0%} entre notre calcul ({computed:.3f}) et le "
+            f"prix unitaire affiché ({displayed:.3f}) — format à vérifier",
+            None,
+        )
+
+    reason = (
+        f"prix incohérent : {product.price_eur:.2f} € pour {pack.describe()} "
+        f"donnerait {computed:.3f} €/{product.unit_hint_unit}, or l'enseigne "
+        f"affiche {product.unit_price_hint:g} €/{product.unit_hint_unit}"
     )
+    if abs(product.price_eur - product.unit_price_hint) < 0.01:
+        probable = displayed * pack.total_base
+        reason += (
+            f" — le prix lu est probablement le prix unitaire ; "
+            f"prix pack vraisemblable : {probable:.2f} €"
+        )
+    return None, reason
 
 
 def _redact_sample(text: str) -> str:

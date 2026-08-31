@@ -115,6 +115,10 @@ items:
     unit: L
     bulk_worthy: true
     keywords: [litière, litiere]
+    # « Litière rongeurs P'tit Ami 15L » est passée pour une litière chat le
+    # 2026-08-31 : le rayon animalerie mélange les espèces, pas le panier.
+    exclude_keywords: [rongeur, lapin, hamster, gerbille, furet, oiseau,
+                       chinchilla, cochon d'inde, souris]
     qty_per_run: 1
     # §2.2 : contrainte NON négociable. Une litière hors de ces deux types
     # n'est pas une affaire, c'est un hors-sujet.
@@ -136,6 +140,7 @@ items:
     unit: kg
     bulk_worthy: true
     keywords: [croquettes chat, croquettes]
+    exclude_keywords: [chien, chiot]
     qty_per_run: 1
 
   - id: sacs_litiere

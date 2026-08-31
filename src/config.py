@@ -73,6 +73,11 @@ class Config:
         haystack = strip_accents(label or "").lower()
         best: tuple[int, BasketItem] | None = None
         for item in self.items.values():
+            if any(
+                strip_accents(excluded).lower() in haystack
+                for excluded in item.exclude_keywords
+            ):
+                continue
             for keyword in item.keywords:
                 needle = strip_accents(keyword).lower()
                 if needle and needle in haystack:

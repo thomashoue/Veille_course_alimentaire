@@ -179,3 +179,59 @@ class TestGabaritLeclerc:
         # La classe est rendue telle quelle, pour être recopiée dans un sélecteur.
         assert candidates[0]["class"] == "liWCRS310_Product"
         assert candidates[0]["tag"] == "li"
+
+
+class TestPiegesLitiere:
+    """Les deux bugs du rapport du 2026-08-31, rejoués tels quels.
+
+    Une litière pour rongeurs était devenue « record » dans le panier de
+    Charlotte, avec pour prix le prix au litre pris pour le prix du pack.
+    """
+
+    @pytest.fixture
+    def piege_html(self):
+        return (FIXTURES / "leclerc_litiere_piege.html").read_text(encoding="utf-8")
+
+    def test_la_litiere_rongeurs_n_est_plus_une_litiere_chat(self, piege_html, config):
+        store = config.store("leclerc_pleumeleuc")
+        observations, _ = observations_from_page(piege_html, store, config)
+        assert not any("rongeurs" in o.product_label for o in observations)
+
+    def test_le_prix_au_litre_pris_pour_le_prix_du_pack_est_suspect(self, piege_html, config):
+        store = config.store("leclerc_pleumeleuc")
+        observations, _ = observations_from_page(piege_html, store, config)
+        agglo = next(o for o in observations if "agglomérante" in o.product_label)
+        # 1,32 € pour 15 L (0,088 €/L) alors que l'enseigne affiche 1,32 €/L :
+        # incohérent, et le motif propose le prix vraisemblable.
+        assert agglo.suspect_reason is not None
+        assert "19.80" in agglo.suspect_reason or "19,80" in agglo.suspect_reason
+
+    def test_un_prix_coherent_ne_devient_pas_suspect(self, piege_html, config):
+        store = config.store("leclerc_pleumeleuc")
+        observations, _ = observations_from_page(piege_html, store, config)
+        confort = next(o for o in observations if "confort" in o.product_label)
+        assert confort.suspect_reason is None
+
+    def test_rien_de_douteux_dans_la_liste_de_courses(self, piege_html, config, tmp_path):
+        """Bout en bout : le rapport final ne doit contenir aucun des deux pièges."""
+        from src.pipeline import run
+
+        store = config.store("leclerc_pleumeleuc")
+        observations, _ = observations_from_page(piege_html, store, config)
+        result = run(config, observations=observations, use_drive=False,
+                     ledger_path=tmp_path / "o.sqlite")
+
+        dans_les_paniers = [
+            offer.observation.product_label
+            for basket in result.plan.baskets
+            for offer in basket.offers
+        ]
+        # Le prix suspect ne fait pas une offre…
+        assert not any("agglomérante 15L" in label for label in dans_les_paniers)
+        # …mais il n'est pas perdu : il sort en « à vérifier », motivé.
+        assert "À vérifier avant achat" in result.report.markdown
+        assert "prix incohérent" in result.report.markdown
+        # La litière « confort », au type indéterminable depuis le libellé,
+        # ne passe pas non plus : contrainte dure invérifiable ≠ conforme.
+        assert not any("confort" in label for label in dans_les_paniers)
+        assert "invérifiable" in result.report.markdown

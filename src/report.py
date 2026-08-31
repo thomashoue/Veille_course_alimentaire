@@ -201,10 +201,11 @@ def build_report(
 
     if pistes:
         lines += [
-            "## Pistes non vérifiées en drive",
+            "## À vérifier avant achat",
             "",
-            "*Le catalogue n'est pas l'assortiment du drive : ces prix ne sont "
-            "pas actionnables tant qu'ils n'ont pas été vus dans le drive.*",
+            "*Rien ici n'est achetable les yeux fermés : piste de catalogue "
+            "jamais confirmée en drive, contrainte invérifiable sur le "
+            "libellé, ou prix incohérent à la lecture.*",
             "",
         ]
         for offer in pistes:

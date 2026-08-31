@@ -71,7 +71,7 @@ class TestRapport:
             grade=Grade.GOOD,
         )
         report = build_report(assign([], config), config, pistes=[piste])
-        assert "Pistes non vérifiées" in report.markdown
+        assert "À vérifier avant achat" in report.markdown
         assert "Friskies" in report.markdown
         assert "Friskies" not in report.whatsapp
 

@@ -59,6 +59,9 @@ class BasketItem:
     unit: str                                   # unité de comparaison
     bulk_worthy: bool = False
     keywords: list[str] = field(default_factory=list)
+    # Si l'un de ces mots apparaît dans un libellé, le produit n'est PAS cet
+    # article — « litière rongeurs » n'est pas une litière pour chat.
+    exclude_keywords: list[str] = field(default_factory=list)
     hard_constraints: list[str] = field(default_factory=list)
     attribute_rules: dict[str, dict[str, list[str]]] = field(default_factory=dict)
     qty_per_run: float = 1.0
@@ -131,6 +134,9 @@ class PriceObservation:
     banner: str | None = None
     attributes: dict[str, str] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
+    # Incohérence détectée à la lecture (ex. prix du pack égal au prix au
+    # litre affiché) : l'observation sort en « à vérifier », jamais en offre.
+    suspect_reason: str | None = None
     drive_ref: str | None = None               # référence produit côté drive
     available: bool = True
 
