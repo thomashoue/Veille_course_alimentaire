@@ -296,3 +296,33 @@ class TestGabaritCoursesU:
         assert result.plan.baskets[0].assignee == "thomas"
         # La « bi carbonite » au type inconnu reste hors liste, en à-vérifier.
         assert not any("TRANQUILLE" in o.observation.product_label for o in result.offers)
+
+
+class TestGardeFousIntermarche:
+    """Deux pièges propres à Intermarché, vécus pendant l'expérimentation."""
+
+    def test_le_net_egoutte_du_libelle_est_lu(self, config):
+        html = (
+            '<ul><li class="liWCRS310_Product"><div class="divWCRS310_Content">'
+            "<a>Sardines à l'huile poids net égoutté 93 g</a>"
+            '<button>Ajouter au panier</button>'
+            '<span class="spanWCRS310_Prix">2 €</span><span>,09</span>'
+            "</div></li></ul>"
+        )
+        store = config.store("intermarche_montauban")
+        observations, _ = observations_from_page(html, store, config)
+        assert observations[0].weight_basis == "net_egoutte"
+
+    def test_ville_absente_de_la_page_signalee(self, config):
+        # Se connecter à un autre magasin bascule tout le compte : si la page
+        # ne mentionne jamais la ville attendue, on doit le dire.
+        html = '<div class="produit">Magasin de Lamballe — Lait 6x1L 5,28 €</div>'
+        store = config.store("intermarche_montauban")
+        _, report = observations_from_page(html, store, config)
+        assert report["store_city_seen"] is False
+
+    def test_ville_presente_ok(self, config):
+        html = '<div>Intermarché Montauban-de-Bretagne <span class="produit">Lait 6x1L 5,28 €</span></div>'
+        store = config.store("intermarche_montauban")
+        _, report = observations_from_page(html, store, config)
+        assert report["store_city_seen"] is True

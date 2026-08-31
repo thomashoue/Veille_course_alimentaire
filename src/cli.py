@@ -146,8 +146,9 @@ def _parse_directory(args: argparse.Namespace, config, store) -> int:
     for page in pages:
         html = page.read_text(encoding=args.encoding, errors="replace")
         observations, report = observations_from_page(html, store, config)
+        alerte = "" if report.get("store_city_seen", True) else "  ⚠ ville absente de la page"
         print(f"{page.name:<40} {report['method']:<14} "
-              f"{report['matched_to_basket']} relevé(s)")
+              f"{report['matched_to_basket']} relevé(s){alerte}")
         for obs in observations:
             seen[obs.id] = obs
 
@@ -278,6 +279,11 @@ def cmd_parse_page(args: argparse.Namespace) -> int:
 
     observations, report = observations_from_page(html, store, config, source_url=args.url)
 
+    if not report.get("store_city_seen", True):
+        print(f"⚠ « {store.city} » n'apparaît nulle part dans la page. Le magasin "
+              "actif de la session était peut-être un autre (chez Intermarché, se "
+              "connecter ailleurs bascule tout le compte). Vérifiez avant de vous "
+              "servir de ces prix.")
     print(f"Page      : {args.file} ({report['page_size']} caractères)")
     print(f"Méthode   : {report['method']}")
     print(f"Produits  : {report['products_found']} lus, "

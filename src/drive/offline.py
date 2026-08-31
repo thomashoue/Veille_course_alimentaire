@@ -23,6 +23,8 @@ from html.parser import HTMLParser
 
 from ..config import Config
 from ..ingest.html_extract import (
+    detect_mechanic,
+    detect_weight_basis,
     extract_jsonld,
     parse_price,
     parse_unit_price,
@@ -390,6 +392,10 @@ def observations_from_page(
                 product_label=product.label,
                 price_eur=product.price_eur,
                 category=item.category,
+                # Intermarché affiche en net égoutté, Leclerc en brut (P5) :
+                # quand le libellé le dit, on le lit — sinon P5 signalera.
+                weight_basis=detect_weight_basis(product.label),
+                mechanic=detect_mechanic(product.label),
                 pack_size=pack.size if pack else None,
                 pack_unit=pack.unit if pack else None,
                 pack_count=pack.count if pack else 1,
@@ -406,8 +412,14 @@ def observations_from_page(
             )
         )
 
+    page_text = strip_accents(to_text(html)).lower()
     report = {
         "method": method,
+        # Piège Intermarché vécu : se connecter à un autre magasin bascule le
+        # magasin actif de TOUT le compte. Si la ville attendue n'apparaît
+        # nulle part dans la page, les prix sont peut-être ceux d'un autre
+        # magasin — à vérifier avant de s'en servir.
+        "store_city_seen": strip_accents(store.city).lower() in page_text if store.city else True,
         "products_found": len(products),
         "matched_to_basket": len(observations),
         "ignored_not_in_basket": unmatched,
