@@ -106,6 +106,10 @@ items:
     category: epicerie
     unit: L
     keywords: [huile d'olive, huile olive]
+    # « Sardines à l'huile d'olive » est une conserve, pas de l'huile :
+    # la préparation emprunte le nom de l'ingrédient.
+    exclude_keywords: [sardine, thon, maquereau, filet, conserve, boite, boîte,
+                       poisson, rillette, tomate, escabeche, piment]
     qty_per_run: 1
 
   # ---------------- Viande ----------------
