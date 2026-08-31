@@ -30,7 +30,8 @@ class ExcludedBannerLeak(AssertionError):
 class StoreBasket:
     store: Store
     offers: list[Offer] = field(default_factory=list)
-    saving_eur: float = 0.0
+    saving_eur: float = 0.0          # économie vs seuil « bon » (affichage)
+    marginal_saving_eur: float = 0.0  # ce qu'on perdrait à faire ses courses ailleurs
     detour_cost_eur: float = 0.0
     net_gain_eur: float = 0.0
     kept: bool = True
@@ -107,6 +108,35 @@ def best_per_item(offers: list[Offer], open_store_ids: set[str]) -> dict[str, Of
     return best
 
 
+def _alternatives(candidates: list[Offer]) -> dict[str, list[tuple[float, str]]]:
+    """Par article, les (prix normalisé, magasin) triés, tous magasins confondus."""
+    by_item: dict[str, list[tuple[float, str]]] = {}
+    for offer in candidates:
+        if offer.unit_price is None:
+            continue
+        by_item.setdefault(offer.item.id, []).append((offer.unit_price, offer.store_id))
+    for prices in by_item.values():
+        prices.sort()
+    return by_item
+
+
+def _marginal_saving(offer: Offer, alternatives: dict[str, list[tuple[float, str]]]) -> float:
+    """Ce qu'on paierait en plus pour cet article au meilleur AUTRE magasin.
+
+    Article unique à ce magasin → grosse valeur (le perdre coûte de le racheter
+    ailleurs, ou de s'en passer) : on retient l'écart au seuil comme plancher.
+    """
+    prices = alternatives.get(offer.item.id, [])
+    here = offer.unit_price
+    if here is None:
+        return offer.saving_eur
+    ailleurs = [p for p, sid in prices if sid != offer.store_id]
+    if not ailleurs:
+        # introuvable ailleurs : ce n'est pas un arbitrage de prix
+        return max(offer.saving_eur, here * float(offer.item.qty_per_run) * 0.0)
+    return max(0.0, (min(ailleurs) - here) * float(offer.item.qty_per_run))
+
+
 def assign(offers: list[Offer], config: Config) -> Plan:
     """Construit la liste par magasin.
 
@@ -123,17 +153,24 @@ def assign(offers: list[Offer], config: Config) -> Plan:
 
     while True:
         chosen = best_per_item(candidates, open_stores)
+        alternatives = _alternatives([o for o in candidates if o.store_id in open_stores])
         baskets = {}
         for offer in chosen.values():
             store = config.store(offer.store_id)
             basket = baskets.setdefault(store.id, StoreBasket(store=store))
             basket.offers.append(offer)
             basket.saving_eur += offer.saving_eur
+            basket.marginal_saving_eur += _marginal_saving(offer, alternatives)
 
         worst: StoreBasket | None = None
         for basket in baskets.values():
-            worth, net = p8_worth_detour(basket.saving_eur, basket.store.detour_km, config)
-            basket.detour_cost_eur = basket.saving_eur - net
+            # Le détour se juge sur ce qu'on perdrait à aller ailleurs, pas sur
+            # l'écart au seuil : un magasin peut n'avoir aucune « affaire » et
+            # valoir le détour parce qu'il est simplement moins cher partout.
+            worth, net = p8_worth_detour(
+                basket.marginal_saving_eur, basket.store.detour_km, config
+            )
+            basket.detour_cost_eur = basket.marginal_saving_eur - net
             basket.net_gain_eur = net
             # Un magasin sans détour (domicile ou strictement sur le trajet)
             # ne se discute pas : il n'y a rien à amortir.
@@ -149,7 +186,7 @@ def assign(offers: list[Offer], config: Config) -> Plan:
         minimum = float(config.param("min_net_gain_eur", 0.0))
         worst.drop_reason = (
             f"détour {worst.store.detour_km:g} km non amorti : "
-            f"{format_eur(worst.saving_eur)} d'économie moins "
+            f"{format_eur(worst.marginal_saving_eur)} de moins cher qu'ailleurs, moins "
             f"{format_eur(worst.detour_cost_eur)} de carburant = "
             f"{format_eur(worst.net_gain_eur)} de gain net, sous le minimum de "
             f"{format_eur(minimum)}"
