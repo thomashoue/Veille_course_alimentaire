@@ -164,11 +164,28 @@ def cmd_parse_page(args: argparse.Namespace) -> int:
     Aucun pilotage : c'est la voie qui reste ouverte quand le drive bloque les
     navigateurs automatisés, et la plus durable des deux.
     """
-    from .drive.offline import observations_from_page
+    from .drive.offline import analyze_page, observations_from_page
 
     config = get_config(args.config)
     store = config.store(args.store)
     html = Path(args.file).read_text(encoding=args.encoding, errors="replace")
+
+    if args.diagnose:
+        # Découverte d'un gabarit inconnu : on n'affiche que de la structure.
+        analysis = analyze_page(html)
+        print(f"Page : {analysis['page_size']} caractères, "
+              f"{analysis['prices_in_page']} prix repérés dans le texte brut")
+        print(f"JSON embarqué : {analysis['embedded_json_markers'] or 'aucun marqueur connu'}")
+        print("\nÉléments porteurs de prix, les plus fréquents :\n")
+        print(f"  {'n':>5}  {'balise':<10} {'classe':<34} extrait")
+        for candidate in analysis["candidates"]:
+            print(f"  {candidate['count']:>5}  {candidate['tag']:<10} "
+                  f"{candidate['class']:<34} {candidate['sample'][:70]}")
+        if not analysis["candidates"]:
+            print("  (aucun) — la page ne contient peut-être aucun résultat de recherche")
+        print("\nCopiez ce tableau dans la conversation : il suffit à écrire le sélecteur.")
+        return 0
+
     observations, report = observations_from_page(html, store, config, source_url=args.url)
 
     print(f"Page      : {args.file} ({report['page_size']} caractères)")
@@ -302,6 +319,11 @@ def build_parser() -> argparse.ArgumentParser:
     parse_page.add_argument("--url", help="URL d'origine, pour la traçabilité")
     parse_page.add_argument("--out", help="fichier de relevés (défaut : data/manual.json)")
     parse_page.add_argument("--encoding", default="utf-8")
+    parse_page.add_argument(
+        "--diagnose",
+        action="store_true",
+        help="analyser la structure d'un gabarit inconnu (sortie courte, sans donnée perso)",
+    )
     parse_page.add_argument(
         "--append", action="store_true", help="ajouter aux relevés existants"
     )

@@ -89,3 +89,33 @@ class TestObservations:
         # La litière minérale est écartée par la contrainte dure, pas par le prix.
         labels = [o.observation.product_label for o in result.offers]
         assert not any("minérale" in label for label in labels)
+
+
+class TestDiagnostic:
+    """Découverte d'un gabarit inconnu — le cas Leclerc du 2026-08-31."""
+
+    def test_repere_la_vignette_produit(self, page_html):
+        from src.drive.offline import analyze_page
+
+        analysis = analyze_page(page_html)
+        top = analysis["candidates"][0]
+        assert (top["tag"], top["class"]) == ("li", "produit")
+        assert top["count"] == 4
+
+    def test_page_sans_resultat(self):
+        from src.drive.offline import analyze_page
+
+        analysis = analyze_page("<html><body><p>Aucun résultat</p></body></html>")
+        assert analysis["candidates"] == []
+
+    def test_les_extraits_sont_masques(self):
+        from src.drive.offline import analyze_page
+
+        html = (
+            '<div class="compte">Thomas — houe.thomas@gmail.com — carte 1234567890 '
+            "— 4,80 €</div>"
+        )
+        sample = analyze_page(html)["candidates"][0]["sample"]
+        assert "houe.thomas@gmail.com" not in sample
+        assert "1234567890" not in sample
+        assert "4,80 €" in sample          # le prix, lui, doit rester lisible
