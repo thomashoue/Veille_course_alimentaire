@@ -28,7 +28,7 @@ class TestRapport:
     def test_groupe_par_magasin_et_par_personne(self, config):
         offers = [
             offer(config, "leclerc_pleumeleuc", "lait_demi_ecreme", "Lait 6x1L", 4.80),
-            offer(config, "superu_yffiniac", "cafe", "Café moulu 1 kg", 8.00, saving=4.0),
+            offer(config, "hyperu_yffiniac", "cafe", "Café moulu 1 kg", 8.00, saving=4.0),
         ]
         report = build_report(assign(offers, config), config)
         assert "E.Leclerc Pleumeleuc" in report.markdown

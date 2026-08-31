@@ -31,13 +31,13 @@ class TestAffectation:
     def test_chaque_magasin_va_a_la_bonne_personne(self, config):
         offers = [
             make_offer(config, "leclerc_pleumeleuc", "lait_demi_ecreme", "Lait 6x1L", 4.80, 2.0),
-            make_offer(config, "superu_yffiniac", "cafe", "Café 1 kg", 8.00, 3.0),
+            make_offer(config, "hyperu_yffiniac", "cafe", "Café 1 kg", 8.00, 3.0),
             make_offer(config, "intermarche_montauban", "pates", "Pâtes 1 kg", 1.20, 1.0),
         ]
         plan = assign(offers, config)
         par_personne = {b.store.id: b.assignee for b in plan.baskets}
         assert par_personne["leclerc_pleumeleuc"] == "charlotte"
-        assert par_personne["superu_yffiniac"] == "thomas"
+        assert par_personne["hyperu_yffiniac"] == "thomas"
         assert par_personne["intermarche_montauban"] == "household"
 
     def test_le_meilleur_prix_gagne(self, config):

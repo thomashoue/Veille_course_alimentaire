@@ -49,6 +49,7 @@ stores:
     detour_km: 1
     format: super
     has_drive: true
+    # slug probable : /drive-superu-breteil — à confirmer dans le navigateur
     drive_base_url: https://www.coursesu.com
     search_url_template: "https://www.coursesu.com/recherche?q={q}"
     cart_url_template: "https://www.coursesu.com/panier"
@@ -124,18 +125,20 @@ stores:
     drive_base_url: https://www.intermarche.com
     search_url_template: "https://www.intermarche.com/recherche/{q}"
 
-  - id: superu_yffiniac
+  # URL de drive confirmée par Thomas le 2026-08-31 : chaque magasin U a la
+  # sienne, sur le modèle coursesu.com/drive-<format>-<ville>.
+  - id: hyperu_yffiniac
     banner: u
-    name: Super U Yffiniac
+    name: Hyper U Yffiniac
     city: Yffiniac
     postcode: "22120"
     corridor: west
     assignee: thomas
     distance_km: 62
     detour_km: 3
-    format: super
+    format: hyper
     has_drive: true
-    drive_base_url: https://www.coursesu.com
+    drive_base_url: https://www.coursesu.com/drive-hyperu-yffiniac
     search_url_template: "https://www.coursesu.com/recherche?q={q}"
     cart_url_template: "https://www.coursesu.com/panier"
 
