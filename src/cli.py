@@ -195,6 +195,104 @@ def cmd_capture(args: argparse.Namespace) -> int:
     return 0
 
 
+def _read_clipboard() -> str:
+    """Contenu du presse-papiers, sans dépendance externe."""
+    import subprocess
+
+    if sys.platform == "win32":
+        command = [
+            "powershell", "-noprofile", "-command",
+            "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
+        ]
+    elif sys.platform == "darwin":
+        command = ["pbpaste"]
+    else:
+        command = ["xclip", "-selection", "clipboard", "-o"]
+    result = subprocess.run(command, capture_output=True, timeout=10)
+    return result.stdout.decode("utf-8", errors="replace")
+
+
+def _extract_json_array(text: str) -> str:
+    """Isole le tableau JSON d'une réponse d'assistant (souvent entouré de prose)."""
+    start = text.find("[")
+    end = text.rfind("]")
+    if start == -1 or end <= start:
+        raise ValueError("aucun tableau JSON [ … ] trouvé dans le texte collé")
+    return text[start : end + 1]
+
+
+def cmd_paste(args: argparse.Namespace) -> int:
+    """Importe des relevés JSON depuis le presse-papiers (ou un fichier/stdin).
+
+    C'est le chaînon avec Claude dans Chrome : l'extension ne peut pas
+    enregistrer de fichier (pas de Ctrl+S pour une extension), mais elle rend
+    du JSON dans la conversation. Copier sa réponse puis `paste` suffit.
+    """
+    from .models import PriceObservation
+    from .pipeline import load_observations
+
+    config = get_config(args.config)
+    if args.file:
+        raw = Path(args.file).read_text(encoding="utf-8", errors="replace")
+    elif args.stdin:
+        raw = sys.stdin.read()
+    else:
+        try:
+            raw = _read_clipboard()
+        except Exception as exc:
+            print(f"Presse-papiers illisible ({exc}) — utilisez --file ou --stdin.")
+            return 2
+
+    try:
+        rows = json.loads(_extract_json_array(raw))
+    except ValueError as exc:
+        print(f"Rien d'importable : {exc}")
+        return 2
+
+    known_fields = set(PriceObservation.__dataclass_fields__)
+    valid, errors = [], []
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            errors.append(f"entrée {index} : pas un objet")
+            continue
+        store = row.get("store_id")
+        item = row.get("basket_item_id")
+        if store not in config.stores:
+            errors.append(f"entrée {index} : magasin inconnu {store!r}")
+            continue
+        if item not in config.items:
+            errors.append(f"entrée {index} : article inconnu {item!r}")
+            continue
+        if not row.get("product_label") or row.get("price_eur") is None:
+            errors.append(f"entrée {index} : libellé ou prix manquant")
+            continue
+        valid.append({k: v for k, v in row.items() if k in known_fields})
+
+    if errors:
+        print("Écartées :")
+        for error in errors:
+            print(f"  · {error}")
+        if not valid:
+            print(f"\nMagasins valides : {', '.join(sorted(config.stores))}")
+            print(f"Articles valides : {', '.join(sorted(config.items))}")
+            return 1
+
+    out = Path(args.out or (DATA_DIR / "manual.json"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    existing = []
+    if out.exists() and not args.replace:
+        existing = json.loads(out.read_text(encoding="utf-8"))
+    merged = existing + valid
+    out.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    for row in valid:
+        print(f"  {row['price_eur']:>7.2f} €  {config.item(row['basket_item_id']).label:<22} "
+              f"{row['product_label'][:60]}")
+    print(f"\n{len(valid)} relevé(s) importés → {out} ({len(merged)} au total)")
+    print(f"Ensuite : python -m src.cli run --no-drive --manual {out}")
+    return 0
+
+
 def cmd_shortlist(args: argparse.Namespace) -> int:
     """Interroge les agrégateurs et dit QUOI vérifier, et OÙ.
 
@@ -431,6 +529,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--append", action="store_true", help="ajouter aux relevés existants"
     )
     parse_page.set_defaults(func=cmd_parse_page)
+
+    paste = sub.add_parser(
+        "paste",
+        help="importer des relevés JSON depuis le presse-papiers (réponse de Claude dans Chrome)",
+    )
+    paste.add_argument("--file", help="lire depuis un fichier plutôt que le presse-papiers")
+    paste.add_argument("--stdin", action="store_true", help="lire depuis l'entrée standard")
+    paste.add_argument("--out", help="fichier de relevés (défaut : data/manual.json)")
+    paste.add_argument("--replace", action="store_true",
+                       help="remplacer le fichier au lieu d'ajouter")
+    paste.set_defaults(func=cmd_paste)
 
     shortlist_parser = sub.add_parser(
         "shortlist",

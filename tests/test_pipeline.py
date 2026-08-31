@@ -248,3 +248,57 @@ class TestParseDossier:
         from src.cli import main
 
         assert main(["parse-page", "--store", "leclerc_pleumeleuc"]) == 2
+
+
+class TestPaste:
+    """Import direct de la réponse JSON de Claude dans Chrome (pas de Ctrl+S)."""
+
+    def _paste(self, tmp_path, text, replace=False):
+        from src.cli import main
+
+        source = tmp_path / "colle.txt"
+        source.write_text(text, encoding="utf-8")
+        out = tmp_path / "manual.json"
+        argv = ["paste", "--file", str(source), "--out", str(out)]
+        if replace:
+            argv.append("--replace")
+        return main(argv), out
+
+    def test_json_entoure_de_prose(self, config, tmp_path):
+        import json as json_module
+
+        code, out = self._paste(
+            tmp_path,
+            'Voici les relevés demandés :\n```json\n'
+            '[{"store_id": "intermarche_montauban", "basket_item_id": "oeufs",'
+            ' "product_label": "Œufs frais De Nos Régions x12", "price_eur": 2.77,'
+            ' "verified_in_drive": true, "source": "drive"}]\n```\nDites-moi si besoin.',
+        )
+        assert code == 0
+        rows = json_module.loads(out.read_text(encoding="utf-8"))
+        assert rows[0]["price_eur"] == 2.77
+
+    def test_magasin_inconnu_ecarte_avec_explication(self, config, tmp_path, capsys):
+        code, _ = self._paste(
+            tmp_path,
+            '[{"store_id": "carrefour_city", "basket_item_id": "oeufs",'
+            ' "product_label": "Œufs x12", "price_eur": 2.5}]',
+        )
+        assert code == 1
+        sortie = capsys.readouterr().out
+        assert "magasin inconnu" in sortie
+        assert "intermarche_montauban" in sortie      # la liste valide est donnée
+
+    def test_ajout_sans_ecraser(self, config, tmp_path):
+        import json as json_module
+
+        row = ('[{"store_id": "intermarche_montauban", "basket_item_id": "oeufs",'
+               ' "product_label": "Œufs x12", "price_eur": 2.77}]')
+        self._paste(tmp_path, row)
+        code, out = self._paste(tmp_path, row)
+        assert code == 0
+        assert len(json_module.loads(out.read_text(encoding="utf-8"))) == 2
+
+    def test_texte_sans_json(self, config, tmp_path):
+        code, _ = self._paste(tmp_path, "désolé, je n'ai rien trouvé")
+        assert code == 2

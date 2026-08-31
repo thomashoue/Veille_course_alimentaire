@@ -185,7 +185,9 @@ seules les pistes se vérifient (constat C1).
 python -m src.cli shortlist
 
 # 2. Humain : ouvrir chaque URL dans son navigateur habituel (déjà connecté),
-#    Ctrl+S « page complète » dans un dossier — 3 à 6 pages un vendredi normal
+#    Ctrl+S « page complète » dans un dossier — 3 à 6 pages un vendredi normal.
+#    Astuce : l'extension SingleFile (libre, Chrome/Firefox/Edge) enregistre
+#    TOUS les onglets ouverts en un clic — les 6 Ctrl+S deviennent un seul geste
 
 # 3. Automatique : tout le dossier d'un coup, puis le rapport
 python -m src.cli parse-page --store leclerc_pleumeleuc --dir mes_pages

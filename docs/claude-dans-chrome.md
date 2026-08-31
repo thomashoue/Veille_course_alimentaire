@@ -12,7 +12,11 @@ non comparable.
 
 1. `python -m src.cli shortlist` → la liste des recherches à faire, avec les URL.
 2. Coller à Claude dans Chrome le prompt ci-dessous, complété avec ces URL.
-3. Coller sa réponse JSON dans `data/manual.json`.
+3. Copier sa réponse (Ctrl+C sur le bloc JSON), puis :
+   `python -m src.cli paste` — la commande lit le presse-papiers, valide
+   chaque relevé (magasin et article connus, prix présent) et l'ajoute à
+   `data/manual.json`. Une extension ne peut pas enregistrer de fichier ;
+   elle n'en a pas besoin.
 4. `python -m src.cli run --no-drive --manual data/manual.json`
 
 L'étape 2 remplace le Ctrl+S — c'est le même contrat : des relevés bruts,
