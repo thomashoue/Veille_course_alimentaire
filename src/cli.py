@@ -131,6 +131,33 @@ def cmd_search(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_capture(args: argparse.Namespace) -> int:
+    """Capture ce que le drive renvoie vraiment, pour caler les sélecteurs."""
+    from .drive.capture import capture_search
+
+    config = get_config(args.config)
+    store = config.store(args.store)
+    directory = capture_search(
+        store,
+        args.query,
+        args.out or (DATA_DIR / "captures"),
+        headless=args.headless,
+        include_cart=args.cart,
+    )
+    diagnostic = json.loads((directory / "diagnostic.json").read_text(encoding="utf-8"))
+    print(f"\nCapture écrite dans {directory}\n")
+    print(f"  page          : {diagnostic['page_size']} caractères")
+    print(f"  réponses JSON : {diagnostic['xhr_json_captured']}")
+    print(f"  produits lus par les sélecteurs actuels : "
+          f"{diagnostic.get('products_found_by_current_selectors', 0)}")
+    for sample in diagnostic.get("sample", []):
+        print(f"    · {sample['price']} — {sample['label']}")
+    print(f"\n  → {diagnostic['verdict']}\n")
+    print("Les fichiers sont masqués (e-mail, téléphone, numéros longs) et ne")
+    print("contiennent ni en-têtes ni cookies. Relisez-les avant de les partager.")
+    return 0
+
+
 def cmd_history(args: argparse.Namespace) -> int:
     config = get_config(args.config)
     ledger = Ledger(args.ledger)
@@ -224,6 +251,21 @@ def build_parser() -> argparse.ArgumentParser:
     search.add_argument("--query", required=True)
     search.add_argument("--headful", action="store_true")
     search.set_defaults(func=cmd_search)
+
+    capture = sub.add_parser(
+        "capture",
+        help="enregistrer ce qu'un drive renvoie (HTML + XHR) pour caler les sélecteurs",
+    )
+    capture.add_argument("--store", required=True)
+    capture.add_argument("--query", required=True)
+    capture.add_argument("--out", help="répertoire de sortie (défaut : data/captures)")
+    capture.add_argument("--cart", action="store_true", help="capturer aussi la page panier")
+    capture.add_argument(
+        "--headless",
+        action="store_true",
+        help="sans fenêtre (déconseillé : on ne voit pas si la session a expiré)",
+    )
+    capture.set_defaults(func=cmd_capture)
 
     history = sub.add_parser("history", help="historique et tendance d'un article")
     history.add_argument("--item", required=True)
