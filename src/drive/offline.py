@@ -335,7 +335,7 @@ def extract_products(html: str) -> tuple[list[DriveProduct], str]:
         # + version mobile masquée).
         unique: dict[str, DriveProduct] = {}
         for product in products:
-            key = (product.label.lower(), product.price_eur)
+            key = (strip_accents(product.label).lower().split(), product.price_eur)
             unique.setdefault(str(key), product)
         if unique:
             return list(unique.values()), method

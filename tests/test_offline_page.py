@@ -326,3 +326,41 @@ class TestGardeFousIntermarche:
         store = config.store("intermarche_montauban")
         _, report = observations_from_page(html, store, config)
         assert report["store_city_seen"] is True
+
+
+class TestFauxPositifsIntermarche:
+    """Pièges de rattachement relevés sur une vraie page Intermarché (174 produits).
+
+    Le rattachement par sous-chaîne prenait « chorizo » pour du riz, le fromage
+    « Soignon » pour des oignons, un yaourt banane pour des bananes. Les plats
+    préparés et desserts empruntaient le nom d'un ingrédient du panier.
+    """
+
+    @pytest.mark.parametrize("label", [
+        "Charal Burger spicy chorizo la boîte de 4 620g",
+        "Soignon La Bûche Extra fondante la bûche de 180 g",
+        "Yoplait Yop Yaourt à boire aromatisé fraise banane",
+        "La Laitière Crème aux œufs sur lit de caramel les 4 pots",
+        "Savernou Saucisson sec comté noisette 100g",
+        "Sodebo Wraper's wrap poulet pané cheddar oignon frits",
+        "Monique Ranou Maxi bacon burger 195g",
+        "Mamie Nova Gourmand Dessert Cœur de Liégeois chocolat",
+    ])
+    def test_les_faux_positifs_sont_ecartes(self, config, label):
+        assert config.match_item(label) is None
+
+    @pytest.mark.parametrize("label, expected", [
+        ("Pâturages Intermarché Lait demi-écrémé les 6x1L", "lait_demi_ecreme"),
+        ("Panzani Pâtes Torti Les 3 minutes 1kg", "pates"),
+        ("Odyssée Intermarché thon piquant 120 g", "conserve_poisson"),
+        ("Président Emmental râpé fondant sachet 350 g", "emmental_rape"),
+        ("Café moulu Classique pur arabica 500 g", "cafe"),
+    ])
+    def test_les_vrais_produits_matchent_toujours(self, config, label, expected):
+        assert config.match_item(label).id == expected
+
+    def test_fruits_legumes_pas_cherches_en_drive(self, config):
+        # Hors périmètre drive : « Oignons rouges 1kg » ne remonte pas d'une
+        # page de drive, même si le mot correspond.
+        assert config.match_item("Oignons rouges 1kg") is None
+        assert config.match_item("Oignons rouges 1kg", include_out_of_scope=True) is not None

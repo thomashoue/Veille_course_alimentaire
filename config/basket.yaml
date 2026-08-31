@@ -38,6 +38,7 @@ items:
     category: cremerie
     unit: kg
     keywords: [comté, comte]
+    exclude_keywords: [saucisson, chips, biscuit, aperitif]
     qty_per_run: 0.3
 
   - id: oeufs
@@ -45,6 +46,7 @@ items:
     category: cremerie
     unit: unite
     keywords: [œufs, oeufs]
+    exclude_keywords: [creme, dessert, clafoutis, yaourt, flan]
     qty_per_run: 12
 
   - id: beurre
@@ -52,6 +54,7 @@ items:
     category: cremerie
     unit: kg
     keywords: [beurre]
+    exclude_keywords: [cacahuete, cacahuètes, dessert, gateau, biscuit]
     qty_per_run: 1
 
   # ---------------- Épicerie ----------------
@@ -95,6 +98,7 @@ items:
     category: epicerie
     unit: kg
     keywords: [riz]
+    exclude_keywords: [chorizo, gateau de riz]
     qty_per_run: 1
 
   - id: huile_olive
@@ -110,6 +114,7 @@ items:
     category: viande
     unit: kg
     keywords: [steak haché, steak hache, haché 5%]
+    exclude_keywords: [bacon, burger surgele, wrap]
     qty_per_run: 1
 
   - id: poulet
@@ -117,6 +122,7 @@ items:
     category: viande
     unit: kg
     keywords: [filet de poulet, escalope de poulet]
+    exclude_keywords: [wrap, sandwich, nuggets, pane, cordon, plat]
     qty_per_run: 1
 
   # ---------------- Animalerie ----------------
