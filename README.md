@@ -212,8 +212,11 @@ de pare-feu applicatif. Le module essaie trois lectures dans l'ordre : JSON-LD,
 JSON embarqué dans la page, puis les blocs HTML. Ajoutez `--append` pour
 empiler plusieurs recherches avant de lancer le run.
 
-`--manual` accepte aussi un JSON saisi entièrement à la main : c'est la
-dernière voie de secours, et elle donne exactement le même rapport.
+`--manual` accepte aussi un JSON saisi à la main — ou produit par
+**Claude dans Chrome**, qui navigue dans votre navigateur et n'est donc pas
+bloqué : voir [`docs/claude-dans-chrome.md`](docs/claude-dans-chrome.md) pour
+le prompt prêt à coller. Dans tous les cas, même contrat : des relevés bruts,
+zéro calcul en chemin, et le même rapport à l'arrivée.
 
 **Pièges déjà encodés :** propagation de session Leclerc vers
 `fd7-courses` (« Commencer mes courses »), modale de confirmation à la
