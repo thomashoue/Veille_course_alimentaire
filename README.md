@@ -166,6 +166,28 @@ page non vide — un rapport vide qui ressemble à « pas de promo » est pire
 qu'une erreur. La voie recommandée reste le **XHR** (`parse_search_xhr` est déjà
 là et testé) dès que les endpoints auront été relevés une fois, session ouverte.
 
+### La semaine type (vendredi, ~10 minutes)
+
+On ne vérifie pas les 26 articles du panier : les agrégateurs orientent, et
+seules les pistes se vérifient (constat C1).
+
+```bash
+# 1. Automatique : les agrégateurs remontent les pistes, avec les URL à ouvrir
+python -m src.cli shortlist
+
+# 2. Humain : ouvrir chaque URL dans son navigateur habituel (déjà connecté),
+#    Ctrl+S « page complète » dans un dossier — 3 à 6 pages un vendredi normal
+
+# 3. Automatique : tout le dossier d'un coup, puis le rapport
+python -m src.cli parse-page --store leclerc_pleumeleuc --dir mes_pages
+python -m src.cli run --no-drive --manual data/manual.json
+```
+
+Ce qui ne demande AUCUNE page : Action, Lidl, Aldi, Netto (pas de drive, le
+prix catalogue est le prix magasin — liste papier automatique), les fruits et
+légumes (hors périmètre), et les postes à stocker sans signal de promo — le
+ledger garde leur historique, on n'y revient que quand une piste apparaît.
+
 ### La voie qui marche partout : `parse-page`
 
 Vous naviguez dans le drive **normalement**, dans votre navigateur habituel.

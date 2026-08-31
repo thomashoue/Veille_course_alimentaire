@@ -208,3 +208,43 @@ class TestCollecteExplicite:
         pipeline.run(config, manual_file=path, collect_sources=True, use_drive=False,
                      ledger_path=tmp_path / "o.sqlite")
         assert appels == [1]
+
+
+class TestParseDossier:
+    """parse-page --dir : toute la moisson du vendredi en une commande."""
+
+    def test_dossier_de_pages(self, config, tmp_path, capsys):
+        import shutil
+        from pathlib import Path
+
+        from src.cli import main
+
+        fixtures = Path(__file__).parent / "fixtures"
+        pages = tmp_path / "pages"
+        pages.mkdir()
+        shutil.copy(fixtures / "leclerc_drive_tile.html", pages / "lait.html")
+        shutil.copy(fixtures / "drive_search_saved.html", pages / "recherche2.html")
+        out = tmp_path / "manual.json"
+
+        code = main([
+            "parse-page", "--store", "leclerc_pleumeleuc",
+            "--dir", str(pages), "--out", str(out),
+        ])
+        assert code == 0
+        import json as json_module
+
+        rows = json_module.loads(out.read_text(encoding="utf-8"))
+        assert len(rows) >= 4
+        assert all(r["verified_in_drive"] for r in rows)
+
+    def test_dossier_vide(self, config, tmp_path):
+        from src.cli import main
+
+        vide = tmp_path / "vide"
+        vide.mkdir()
+        assert main(["parse-page", "--store", "leclerc_pleumeleuc", "--dir", str(vide)]) == 1
+
+    def test_ni_file_ni_dir(self, config):
+        from src.cli import main
+
+        assert main(["parse-page", "--store", "leclerc_pleumeleuc"]) == 2

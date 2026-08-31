@@ -132,6 +132,41 @@ def cmd_search(args: argparse.Namespace) -> int:
     return 0
 
 
+def _parse_directory(args: argparse.Namespace, config, store) -> int:
+    """Toutes les pages d'un dossier, en un seul relevé."""
+    from .drive.offline import observations_from_page
+
+    directory = Path(args.dir)
+    pages = sorted(directory.glob("*.htm*"))
+    if not pages:
+        print(f"Aucun fichier .html dans {directory}")
+        return 1
+
+    seen: dict[str, object] = {}
+    for page in pages:
+        html = page.read_text(encoding=args.encoding, errors="replace")
+        observations, report = observations_from_page(html, store, config)
+        print(f"{page.name:<40} {report['method']:<14} "
+              f"{report['matched_to_basket']} relevé(s)")
+        for obs in observations:
+            seen[obs.id] = obs
+
+    if not seen:
+        print("\nRien d'exploitable dans ce dossier.")
+        return 1
+
+    out = Path(args.out or (DATA_DIR / "manual.json"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    existing = []
+    if out.exists() and args.append:
+        existing = json.loads(out.read_text(encoding="utf-8"))
+    rows = existing + [obs.to_row() for obs in seen.values()]
+    out.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\n{len(seen)} relevé(s) uniques → {out}")
+    print(f"Ensuite : python -m src.cli run --no-drive --manual {out}")
+    return 0
+
+
 def cmd_capture(args: argparse.Namespace) -> int:
     """Capture ce que le drive renvoie vraiment, pour caler les sélecteurs."""
     from .drive.capture import capture_search
@@ -159,6 +194,53 @@ def cmd_capture(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_shortlist(args: argparse.Namespace) -> int:
+    """Interroge les agrégateurs et dit QUOI vérifier, et OÙ.
+
+    C'est le constat C1 rendu pratique : on ne vérifie pas tout le panier,
+    seulement les pistes que les catalogues font remonter — plus les postes à
+    stocker dont le seuil mérite un coup d'œil.
+    """
+    from .normalize import normalize
+    from .pipeline import collect, shortlist
+    from .validate import grade as grade_fn
+
+    config = get_config(args.config)
+    observations = collect(config, args.items, offline=args.offline)
+    kept, _ = shortlist(observations, config)
+
+    par_magasin: dict[str, dict[str, list]] = {}
+    for obs in kept:
+        store = config.stores.get(obs.store_id)
+        if store is None or not store.has_drive:
+            continue
+        par_magasin.setdefault(store.id, {}).setdefault(obs.basket_item_id, []).append(obs)
+
+    if not par_magasin:
+        print("Aucune piste en drive cette semaine (collecte vide ou tout écarté).")
+        print("Les postes à stocker restent consultables : run --no-drive --manual …")
+        return 0
+
+    total = 0
+    for store_id, items in par_magasin.items():
+        store = config.store(store_id)
+        print(f"\n{store.name} — {len(items)} article(s) à vérifier")
+        for item_id, pistes in items.items():
+            item = config.item(item_id)
+            meilleure = min(p.price_eur for p in pistes)
+            query = item.keywords[0] if item.keywords else item.label
+            url = store.search_url(query)
+            print(f"  · {item.label:<24} annoncé dès {meilleure:.2f} € "
+                  f"({len(pistes)} piste(s))")
+            if url:
+                print(f"    {url}")
+            total += 1
+    print(f"\n{total} recherche(s) à ouvrir. Pour chaque page : Ctrl+S dans un "
+          "dossier, puis :")
+    print("  python -m src.cli parse-page --store <magasin> --dir <dossier>")
+    return 0
+
+
 def cmd_parse_page(args: argparse.Namespace) -> int:
     """Lit une page de drive enregistrée depuis le navigateur habituel.
 
@@ -169,6 +251,13 @@ def cmd_parse_page(args: argparse.Namespace) -> int:
 
     config = get_config(args.config)
     store = config.store(args.store)
+
+    if args.dir:
+        return _parse_directory(args, config, store)
+    if not args.file:
+        print("Il faut --file (une page) ou --dir (un dossier de pages).")
+        return 2
+
     html = Path(args.file).read_text(encoding=args.encoding, errors="replace")
 
     if args.diagnose:
@@ -322,7 +411,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="lire une page de drive enregistrée depuis le navigateur (Ctrl+S)",
     )
     parse_page.add_argument("--store", required=True)
-    parse_page.add_argument("--file", required=True, help="fichier .html enregistré")
+    parse_page.add_argument("--file", help="fichier .html enregistré")
+    parse_page.add_argument("--dir", help="dossier de pages .html à lire d'un coup")
     parse_page.add_argument("--url", help="URL d'origine, pour la traçabilité")
     parse_page.add_argument("--out", help="fichier de relevés (défaut : data/manual.json)")
     parse_page.add_argument("--encoding", default="utf-8")
@@ -335,6 +425,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--append", action="store_true", help="ajouter aux relevés existants"
     )
     parse_page.set_defaults(func=cmd_parse_page)
+
+    shortlist_parser = sub.add_parser(
+        "shortlist",
+        help="interroger les agrégateurs et lister quoi vérifier en drive, avec les URL",
+    )
+    shortlist_parser.add_argument("--items", nargs="*", help="limiter à ces articles")
+    shortlist_parser.add_argument("--offline", action="store_true")
+    shortlist_parser.set_defaults(func=cmd_shortlist)
 
     capture = sub.add_parser(
         "capture",
