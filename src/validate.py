@@ -112,7 +112,14 @@ def check_hard_constraints(obs: PriceObservation, item: BasketItem) -> Verdict:
 # Règles P1…P7
 # --------------------------------------------------------------------------- #
 def p1_exact_double(obs: PriceObservation) -> Verdict:
-    """Ratio exactement 2,00 → lot ou « 2ᵉ à −50 % », jamais une remise de moitié."""
+    """Ratio exactement 2,00 → lot ou « 2ᵉ à −50 % », jamais une remise de moitié.
+
+    Règle C2, calibrée sur les AGRÉGATEURS. Sur une page de drive, le prix
+    barré à côté du prix réel est un affichage de l'enseigne : un ratio de
+    2,00 y est une vraie promo à −50 %, pas une donnée trafiquée.
+    """
+    if obs.source == "drive":
+        return OK()
     if not obs.regular_price or not obs.price_eur:
         return OK()
     ratio = obs.regular_price / obs.price_eur
@@ -124,7 +131,12 @@ def p1_exact_double(obs: PriceObservation) -> Verdict:
 
 
 def p2_absurd_ratio(obs: PriceObservation) -> Verdict:
-    """Ratio > 2,4 → donnée aberrante : le « promo » est en fait le prix normal."""
+    """Ratio > 2,4 → donnée aberrante : le « promo » est en fait le prix normal.
+
+    Comme P1 : règle d'agrégateur, sans objet sur une page de drive.
+    """
+    if obs.source == "drive":
+        return OK()
     if not obs.regular_price or not obs.price_eur:
         return OK()
     ratio = obs.regular_price / obs.price_eur
@@ -377,7 +389,13 @@ def saving_vs_threshold(
     reference = (thresholds or {}).get("good")
     if reference is None or price is None:
         return 0.0
-    return max(0.0, (float(reference) - price) * float(item.qty_per_run))
+    quantity = float(item.qty_per_run)
+    # Sous le seuil « bon » d'un poste à stocker, on n'achète pas la quantité
+    # d'une semaine : l'économie se mesure sur la quantité de stockage. C'est
+    # elle qui décide si un détour se justifie (P8).
+    if item.bulk_worthy and item.qty_stock and price <= float(reference):
+        quantity = max(quantity, float(item.qty_stock))
+    return max(0.0, (float(reference) - price) * quantity)
 
 
 def is_reportable(verdict: Verdict, obs: PriceObservation) -> bool:

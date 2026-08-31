@@ -93,7 +93,12 @@ def _basket_section(basket: StoreBasket) -> list[str]:
         "",
     ]
     if basket.store.has_drive and basket.store.drive_base_url:
-        lines += [f"Drive : {basket.store.drive_base_url}", ""]
+        drive_line = f"Drive : {basket.store.drive_base_url}"
+        if basket.store.min_order_eur:
+            drive_line += (
+                f" · ⚠ minimum de commande {format_eur(basket.store.min_order_eur)}"
+            )
+        lines += [drive_line, ""]
     else:
         lines += ["*Pas de drive : liste papier, achat en magasin.*", ""]
     lines += [_offer_line(offer) for offer in basket.offers]

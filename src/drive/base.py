@@ -32,6 +32,8 @@ class DriveProduct:
     # il permet de retrouver un format absent du libellé, et de recouper.
     unit_price_hint: float | None = None
     unit_hint_unit: str | None = None
+    # Prix barré affiché à côté (« au lieu de ») : alimente regular_price.
+    regular_price: float | None = None
     raw: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:

@@ -49,6 +49,7 @@ stores:
     detour_km: 1
     format: super
     has_drive: true
+    min_order_eur: 30    # affiché sur coursesu.com (2026-08-31)
     # slug probable : /drive-superu-breteil — à confirmer dans le navigateur
     drive_base_url: https://www.coursesu.com
     search_url_template: "https://www.coursesu.com/recherche?q={q}"
@@ -65,6 +66,7 @@ stores:
     detour_km: 2
     format: hyper
     has_drive: true
+    min_order_eur: 30    # affiché sur coursesu.com (2026-08-31)
     drive_base_url: https://www.coursesu.com
     search_url_template: "https://www.coursesu.com/recherche?q={q}"
     cart_url_template: "https://www.coursesu.com/panier"
@@ -138,6 +140,7 @@ stores:
     detour_km: 3
     format: hyper
     has_drive: true
+    min_order_eur: 30    # affiché sur coursesu.com (2026-08-31)
     drive_base_url: https://www.coursesu.com/drive-hyperu-yffiniac
     search_url_template: "https://www.coursesu.com/recherche?q={q}"
     cart_url_template: "https://www.coursesu.com/panier"

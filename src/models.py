@@ -34,6 +34,7 @@ class Store:
     search_url_template: str | None = None
     cart_url_template: str | None = None
     format: str = "super"
+    min_order_eur: float | None = None   # minimum de commande du drive
     excluded: bool = False
 
     def search_url(self, query: str) -> str | None:
@@ -64,7 +65,8 @@ class BasketItem:
     exclude_keywords: list[str] = field(default_factory=list)
     hard_constraints: list[str] = field(default_factory=list)
     attribute_rules: dict[str, dict[str, list[str]]] = field(default_factory=dict)
-    qty_per_run: float = 1.0
+    qty_per_run: float = 1.0       # quantité d'un run, dans l'unité de l'article
+    qty_stock: float | None = None  # quantité visée quand on stocke (bulk_worthy)
     out_of_scope_drive: bool = False
     weight_basis_required: bool = False
     fallback_advice: str | None = None

@@ -235,3 +235,64 @@ class TestPiegesLitiere:
         # ne passe pas non plus : contrainte dure invérifiable ≠ conforme.
         assert not any("confort" in label for label in dans_les_paniers)
         assert "invérifiable" in result.report.markdown
+
+
+class TestGabaritCoursesU:
+    """Gabarit réel de Courses U (SFCC), relevé le 2026-08-31 à Yffiniac.
+
+    Spécificités : le libellé apparaît deux fois (texte caché + lien), et sur
+    une promo le prix BARRÉ (price-standard) est rendu avant le prix réel
+    (price-sales) — le « premier prix du texte » serait le mauvais.
+    """
+
+    @pytest.fixture
+    def u_html(self):
+        return (FIXTURES / "coursesu_tiles.html").read_text(encoding="utf-8")
+
+    def test_les_vignettes_sont_lues(self, u_html):
+        products, method = extract_products(u_html)
+        assert method == "blocs HTML"
+        assert len(products) == 2
+
+    def test_le_libelle_duplique_est_replie(self, u_html):
+        products, _ = extract_products(u_html)
+        tranquille = next(p for p in products if "TRANQUILLE" in p.label)
+        assert tranquille.label == "Litière bi carbonite, TRANQUILLE, sac 5L"
+
+    def test_le_prix_barre_n_est_pas_pris_pour_le_prix(self, u_html):
+        products, _ = extract_products(u_html)
+        promo = next(p for p in products if "charbon" in p.label)
+        assert promo.price_eur == pytest.approx(4.75)     # price-sales
+        assert promo.regular_price == pytest.approx(9.50)  # price-standard
+
+    def test_le_prix_unitaire_affiche_est_capture(self, u_html):
+        products, _ = extract_products(u_html)
+        promo = next(p for p in products if "charbon" in p.label)
+        assert (promo.unit_price_hint, promo.unit_hint_unit) == (0.48, "l")
+
+    def test_une_vraie_promo_de_drive_a_moitie_prix_n_est_pas_rejetee(self, u_html, config):
+        """P1 vise les agrégateurs : sur une page de drive, un prix barré au
+        double exact est une vraie promo à −50 %, pas une donnée trafiquée."""
+        from src.pipeline import run
+
+        store = config.store("hyperu_yffiniac")
+        observations, _ = observations_from_page(u_html, store, config)
+        result = run(config, observations=observations, use_drive=False)
+        offres = [o.observation.product_label for o in result.offers]
+        assert any("charbon" in label for label in offres)
+
+    def test_bout_en_bout_yffiniac_chez_thomas(self, u_html, config, tmp_path):
+        from src.pipeline import run
+
+        store = config.store("hyperu_yffiniac")
+        observations, _ = observations_from_page(u_html, store, config)
+        result = run(config, observations=observations, use_drive=False,
+                     ledger_path=tmp_path / "o.sqlite")
+        # 0,475 €/L en charbon actif : sous le seuil 0,92, affaire réelle.
+        charbon = next(o for o in result.offers if "charbon" in o.observation.product_label)
+        assert charbon.observation.attributes["type"] == "agglo_charbon"
+        assert charbon.unit_price == pytest.approx(0.475)
+        assert result.plan.baskets[0].store.id == "hyperu_yffiniac"
+        assert result.plan.baskets[0].assignee == "thomas"
+        # La « bi carbonite » au type inconnu reste hors liste, en à-vérifier.
+        assert not any("TRANQUILLE" in o.observation.product_label for o in result.offers)

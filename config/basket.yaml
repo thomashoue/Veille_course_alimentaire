@@ -16,28 +16,36 @@ items:
     unit: L
     bulk_worthy: true
     keywords: [lait demi-écrémé, lait demi ecreme]
-    qty_per_run: 12
+    qty_per_run: 12        # deux packs de 6x1L
+    qty_stock: 24
 
   - id: emmental_rape
     label: Emmental râpé
     category: cremerie
     unit: kg
     keywords: [emmental râpé, emmental rape]
-    qty_per_run: 1
+    qty_per_run: 0.5
 
   - id: mozzarella
     label: Mozzarella
     category: cremerie
     unit: kg
     keywords: [mozzarella]
-    qty_per_run: 1
+    qty_per_run: 0.4
 
   - id: comte
     label: Comté
     category: cremerie
     unit: kg
     keywords: [comté, comte]
-    qty_per_run: 1
+    qty_per_run: 0.3
+
+  - id: oeufs
+    label: Œufs
+    category: cremerie
+    unit: unite
+    keywords: [œufs, oeufs]
+    qty_per_run: 12
 
   - id: beurre
     label: Beurre demi-sel
@@ -54,6 +62,7 @@ items:
     bulk_worthy: true
     keywords: [lentilles, pois chiches, haricots secs, légumes secs]
     qty_per_run: 2
+    qty_stock: 6
 
   - id: conserve_poisson
     label: Conserves de poisson
@@ -61,7 +70,8 @@ items:
     unit: kg
     bulk_worthy: true
     keywords: [sardines, thon, maquereaux]
-    qty_per_run: 6
+    qty_per_run: 0.6       # ~6 boîtes de 93 g net
+    qty_stock: 2.5
     weight_basis_required: true
 
   - id: cafe
@@ -71,6 +81,7 @@ items:
     bulk_worthy: true
     keywords: [café moulu, cafe moulu, café grains]
     qty_per_run: 1
+    qty_stock: 3
 
   - id: pates
     label: Pâtes
@@ -119,7 +130,8 @@ items:
     # 2026-08-31 : le rayon animalerie mélange les espèces, pas le panier.
     exclude_keywords: [rongeur, lapin, hamster, gerbille, furet, oiseau,
                        chinchilla, cochon d'inde, souris]
-    qty_per_run: 1
+    qty_per_run: 10        # un sac de 10 L
+    qty_stock: 30          # en vraie promo, on stocke trois sacs
     # §2.2 : contrainte NON négociable. Une litière hors de ces deux types
     # n'est pas une affaire, c'est un hors-sujet.
     hard_constraints:
@@ -141,7 +153,8 @@ items:
     bulk_worthy: true
     keywords: [croquettes chat, croquettes]
     exclude_keywords: [chien, chiot]
-    qty_per_run: 1
+    qty_per_run: 2
+    qty_stock: 9
 
   - id: sacs_litiere
     label: Sacs à litière
@@ -157,7 +170,8 @@ items:
     unit: dose
     bulk_worthy: true
     keywords: [lessive]
-    qty_per_run: 1
+    qty_per_run: 45        # un bidon ou un sac de capsules
+    qty_stock: 90
 
   - id: papier_toilette
     label: Papier toilette
@@ -166,6 +180,7 @@ items:
     bulk_worthy: true
     keywords: [papier toilette, papier hygiénique]
     qty_per_run: 24
+    qty_stock: 48
 
   - id: liquide_vaisselle
     label: Liquide vaisselle
@@ -180,7 +195,8 @@ items:
     unit: L
     bulk_worthy: true
     keywords: [vinaigre blanc, vinaigre ménager]
-    qty_per_run: 1
+    qty_per_run: 5         # le bidon
+    qty_stock: 10
     # Le spray est 3 à 5x plus cher au litre que le bidon : on le refuse.
     hard_constraints:
       - "format not in (spray)"
@@ -195,7 +211,7 @@ items:
     category: droguerie
     unit: m
     keywords: [papier cuisson, papier sulfurisé]
-    qty_per_run: 1
+    qty_per_run: 20       # un rouleau = ~20 m
 
   - id: essuie_tout
     label: Essuie-tout

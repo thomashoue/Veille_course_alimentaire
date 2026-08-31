@@ -129,3 +129,13 @@ class TestOffreReportee:
         assert "Litière charbon actif 5 L" in report.markdown
         # Et surtout : elle ne doit PAS être annoncée comme introuvable.
         assert "- **Litière chat** : rien de conforme" not in report.markdown
+
+
+class TestMinimumDeCommande:
+    def test_le_minimum_du_drive_est_rappele(self, config):
+        from src.assign import assign
+        from src.report import build_report
+
+        offers = [offer(config, "hyperu_yffiniac", "cafe", "Café moulu 1 kg", 7.00, saving=4.0)]
+        report = build_report(assign(offers, config), config)
+        assert "minimum de commande 30,00 €" in report.markdown

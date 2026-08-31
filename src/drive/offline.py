@@ -53,6 +53,25 @@ _BLOCK_PATTERNS = [
     ("li", None),
 ]
 
+# Sous-éléments à lire en priorité dans une vignette, par fragment de classe.
+# Relevé Courses U (SFCC) du 2026-08-31 : le prix barré (price-standard) est
+# rendu AVANT le prix réel (price-sales) — lire « le premier prix du texte »
+# prendrait le barré pour le vrai sur chaque promo.
+_PRICE_CHILD = ("price-sales", "prix-vente")
+_REGULAR_CHILD = ("price-standard", "prix-barre", "old-price", "was-price")
+_UNIT_CHILD = ("unit-info", "prixunitemesure", "prix-par-unite", "price-unit")
+
+
+def _child_text(tile: dict, needles: tuple[str, ...]) -> str | None:
+    for child in tile.get("children", []):
+        cls = child.get("class", "")
+        if any(needle in cls for needle in needles):
+            text = child.get("full_text", "")
+            if text:
+                return text
+    return None
+
+
 # Vignettes sponsorisées : ce sont des publicités, pas l'assortiment. Elles
 # portent un prix et passeraient sinon pour des offres.
 _SPONSORED_CLASSES = ("mkp", "trade", "rmp", "sponsor", "publi")
@@ -173,12 +192,22 @@ def _clean_label(text: str) -> str:
     cut = _LABEL_CUTS.search(text)
     if cut and cut.start() >= 5:
         text = text[: cut.start()]
+    # D'abord les prix unitaires (« 0,95 €/l », « 3,07 € le kg ») : les retirer
+    # en entier évite de laisser traîner un « /l » orphelin dans le libellé.
+    text = re.sub(r"\d+[.,]\d+\s*€\s*(?:/|le|par|au)\s*[a-zéè]{1,10}\b", " ", text, flags=re.I)
     # Reste des prix et du sélecteur de quantité pour les gabarits sans bouton.
     text = re.sub(r"\d+[.,]\d{2}\s*€|\d+\s*€\s*,?\s*\d{2}|€\s*\d+[.,]\d{2}|\d+\s*€", " ", text)
     text = re.sub(r"(?i)\b(le kg|le l|par kg|prix au kilo|sponsoris\w*)\b", " ", text)
     text = re.sub(r"(?<= )[-+](?= )|\s0\s\+", " ", text)
     # On ne rogne pas le « + » collé : « Eco+ » est une marque, pas un séparateur.
-    return re.sub(r"\s+", " ", text).strip(" -·|")
+    text = re.sub(r"\s+", " ", text).strip(" -·|")
+    # Chez U, l'image et le lien portent le même texte : « Nom sac 5L Nom sac
+    # 5L ». On replie le doublon exact.
+    words = text.split()
+    half = len(words) // 2
+    if half >= 2 and words[:half] == words[half:]:
+        text = " ".join(words[:half])
+    return text
 
 
 def products_from_jsonld(html: str) -> list[DriveProduct]:
@@ -265,16 +294,23 @@ def products_from_blocks(html: str) -> list[DriveProduct]:
                 continue
             if _is_sponsored(tile):
                 continue
-            price = parse_price(text)
+            # Les sous-éléments typés d'abord, le texte brut en filet.
+            price_text = _child_text(tile, _PRICE_CHILD)
+            price = parse_price(price_text) if price_text else parse_price(text)
+            regular_text = _child_text(tile, _REGULAR_CHILD)
+            regular = parse_price(regular_text) if regular_text else None
             label = _clean_label(text)
             if price is None or len(label) < 5:
                 continue
-            unit_hint = parse_unit_price(text)
+            unit_hint = parse_unit_price(_child_text(tile, _UNIT_CHILD) or text)
             found.append(
                 DriveProduct(
-                    ref=(tile["attrs"].get("data-ref") or tile["attrs"].get("id") or label)[:80],
+                    ref=(tile["attrs"].get("data-ref")
+                         or tile["attrs"].get("data-itemid")
+                         or tile["attrs"].get("id") or label)[:80],
                     label=label[:140],
                     price_eur=price,
+                    regular_price=regular,
                     available="indisponible" not in strip_accents(text).lower(),
                     unit_price_hint=unit_hint[0] if unit_hint else None,
                     unit_hint_unit=unit_hint[1] if unit_hint else None,
@@ -357,6 +393,7 @@ def observations_from_page(
                 pack_size=pack.size if pack else None,
                 pack_unit=pack.unit if pack else None,
                 pack_count=pack.count if pack else 1,
+                regular_price=product.regular_price,
                 source=Source.DRIVE.value,
                 # Mérité : cette page vient bien du drive, chargée par l'humain.
                 verified_in_drive=True,
