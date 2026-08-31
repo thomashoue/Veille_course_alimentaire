@@ -1,5 +1,12 @@
 """Courses U — client drive (backlog P3).
 
+⚠ Constat du 2026-08-31 : coursesu.com est derrière Cloudflare, qui bloque le
+navigateur piloté (« Sorry, you have been blocked »), même sur profil
+authentifié à la main. Ce client n'est donc PAS utilisable pour la recherche
+hebdomadaire : passer par une page enregistrée et ``parse-page`` (voie
+recommandée), ce module restant une infrastructure de secours si la politique
+du site change.
+
 Rappel du §6 : sans magasin sélectionné, coursesu.com masque les prix. Le
 client vérifie donc que la page affiche bien des prix avant de conclure quoi
 que ce soit ; une page sans prix n'est pas « produit absent », c'est une

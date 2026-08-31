@@ -147,15 +147,24 @@ relecture** (`cart_state`) et retentée. Les clics qui échouent silencieusement
 — le comportement constaté sur Leclerc Drive — sont rattrapés ; ce cas précis
 a son test.
 
-**Constat du 2026-08-31 — Leclerc Drive bloque les navigateurs pilotés.**
-Playwright, même sur un profil authentifié à la main, déclenche « Accès
-temporairement restreint — quelque chose dans le comportement du navigateur
-nous a intrigué ». Ce n'est pas un bug du code : c'est un contrôle d'accès
-délibéré du site. On ne cherche pas à le déguiser — ce serait une course sans
-fin, et ce n'est pas à nous d'en décider. La réponse est de **retirer
-l'automate du chemin** : voir `parse-page` ci-dessous, qui lit une page que
-vous avez enregistrée vous-même depuis votre navigateur habituel. L'invariant
-C1 tient toujours, puisque la page vient bien du drive.
+**Constat du 2026-08-31 — les drives bloquent les navigateurs pilotés.**
+Testé en réel, sur profil authentifié à la main :
+
+| Drive | Mécanisme | Message |
+|---|---|---|
+| Leclerc Drive | pare-feu maison | « Accès temporairement restreint — quelque chose dans le comportement du navigateur nous a intrigué » |
+| Courses U | Cloudflare | « Sorry, you have been blocked » |
+
+Ce n'est pas un bug du code : ce sont des contrôles d'accès délibérés, et on
+ne cherche pas à les déguiser — course sans fin, et ce n'est pas à nous d'en
+décider. Conséquence assumée : **le pilotage de navigateur (Playwright) n'est
+pas la voie principale, c'est `parse-page` qui l'est** — l'humain navigue
+normalement, enregistre la page, le code la lit. L'invariant C1 tient
+toujours, puisque la page vient bien du drive. Les clients Playwright
+restent dans `src/drive/` comme infrastructure de secours (et pour
+Intermarché, non testé), mais rien dans le circuit hebdomadaire n'en dépend.
+Le remplissage automatique du panier (§7) tombe avec eux : la liste par
+magasin reste le produit final, le panier se remplit en naviguant.
 
 **Ce qui reste fragile, en toute franchise :** les sélecteurs DOM des trois
 drives et les gabarits des agrégateurs sont écrits d'après la spec et n'ont pas
