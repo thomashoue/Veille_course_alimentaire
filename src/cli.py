@@ -353,6 +353,94 @@ def cmd_paste(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_compare(args: argparse.Namespace) -> int:
+    """Analyse un panier multi-enseignes : face-à-face par article + affectation.
+
+    Nourri par des relevés (--manual), c'est le « test 3 enseignes » sur VOS
+    prix : chaque article comparé enseigne par enseigne sur le prix normalisé,
+    puis l'affectation par corridor avec l'arbitrage du détour.
+    """
+    from collections import defaultdict
+
+    from .assign import assign, person_label
+    from .pipeline import build_offers, load_observations, shortlist
+    from .units import format_eur, format_price
+
+    config = get_config(args.config)
+    observations = load_observations(args.manual, config)
+    kept, _ = shortlist(observations, config)
+    offers, pistes = build_offers(kept, config)
+    plan = assign(offers, config)
+
+    print("=" * 68)
+    print("FACE-À-FACE PAR ARTICLE — meilleur prix normalisé retenu")
+    print("=" * 68)
+    par_article = defaultdict(list)
+    for offer in offers:
+        par_article[offer.item.id].append(offer)
+    for item_id, offs in par_article.items():
+        item = config.item(item_id)
+        seuil = config.threshold(item_id).get("good", "—")
+        print(f"\n{item.label}  (seuil bon : {seuil} €/{item.base_unit})")
+        offs.sort(key=lambda o: o.unit_price if o.unit_price is not None else 9e9)
+        for i, offer in enumerate(offs):
+            store = config.store(offer.store_id)
+            up = (format_price(offer.unit_price, offer.observation.unit_price_unit)
+                  if offer.unit_price is not None else "n/c")
+            flags = []
+            if offer.observation.weight_basis == "brut":
+                flags.append("brut→égoutté")
+            if offer.observation.loyalty_pct:
+                flags.append(f"carte {offer.observation.loyalty_pct:g}%")
+            flag = f"  [{', '.join(flags)}]" if flags else ""
+            mark = "   ← retenu" if i == 0 else ""
+            print(f"   {offer.observation.price_eur:>6.2f} €  {up:>12}  "
+                  f"{store.name[:24]:<24} {offer.grade.value}{flag}{mark}")
+        if len(offs) > 1:
+            best, worst = offs[0], offs[-1]
+            if best.unit_price and worst.unit_price:
+                ecart = (worst.unit_price - best.unit_price) / worst.unit_price
+                print(f"   → écart {ecart:.0%} entre le meilleur et le pire")
+
+    print("\n" + "=" * 68)
+    print("AFFECTATION — par personne, corridor et détour")
+    print("=" * 68)
+    grouped = plan.by_assignee()
+    for who in ("household", "charlotte", "thomas"):
+        baskets = grouped.get(who)
+        if not baskets:
+            continue
+        print(f"\n### {person_label(who)}")
+        for basket in baskets:
+            mini = (f" · min commande {format_eur(basket.store.min_order_eur)}"
+                    if basket.store.min_order_eur else "")
+            total = sum(o.observation.price_eur for o in basket.offers)
+            alerte = ""
+            if basket.store.min_order_eur and total < basket.store.min_order_eur:
+                alerte = f"  ⚠ panier {format_eur(total)} SOUS le minimum"
+            print(f"  {basket.store.name} — {basket.n_items} art. · "
+                  f"gain net {format_eur(basket.net_gain_eur)} · "
+                  f"détour {basket.store.detour_km:g} km{mini}{alerte}")
+            for offer in basket.offers:
+                print(f"      - {offer.item.label}: {offer.observation.product_label} "
+                      f"({format_eur(offer.observation.price_eur)})")
+    if plan.dropped:
+        print("\n  Magasins écartés :")
+        for basket in plan.dropped:
+            print(f"    - {basket.store.name} : {basket.drop_reason}")
+    if plan.deferred:
+        print("\n  Conforme mais pas cette semaine (détour non amorti) :")
+        for item_id, offer in plan.deferred.items():
+            print(f"    - {config.item(item_id).label} chez "
+                  f"{config.store(offer.store_id).name}")
+
+    print(f"\nÉconomie totale estimée : {format_eur(plan.total_saving)} · "
+          f"gain net : {format_eur(plan.total_net_gain)}")
+    if pistes:
+        print(f"{len(pistes)} relevé(s) en « à vérifier » (non actionnables).")
+    return 0
+
+
 def cmd_shortlist(args: argparse.Namespace) -> int:
     """Interroge les agrégateurs et dit QUOI vérifier, et OÙ.
 
@@ -599,6 +687,13 @@ def build_parser() -> argparse.ArgumentParser:
     open_tabs.add_argument("--bulk", action="store_true", help="seulement les postes à stocker")
     open_tabs.add_argument("--script", help="écrire un .bat/.sh rejouable au lieu d'ouvrir")
     open_tabs.set_defaults(func=cmd_open_tabs)
+
+    compare = sub.add_parser(
+        "compare",
+        help="test multi-enseignes : face-à-face par article + affectation, sur vos relevés",
+    )
+    compare.add_argument("--manual", required=True, help="fichier de relevés (data/manual.json)")
+    compare.set_defaults(func=cmd_compare)
 
     paste = sub.add_parser(
         "paste",

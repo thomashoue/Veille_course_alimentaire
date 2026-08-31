@@ -198,6 +198,19 @@ python -m src.cli parse-page --store leclerc_pleumeleuc --dir mes_pages
 python -m src.cli run --no-drive --manual data/manual.json
 ```
 
+Pour comparer plusieurs enseignes sur un même panier, enregistrez les pages
+de chacune et empilez-les avec `--append`, puis :
+
+```bash
+python -m src.cli parse-page --store intermarche_montauban --dir pages_inter --append
+python -m src.cli parse-page --store hyperu_yffiniac       --dir pages_u     --append
+python -m src.cli compare --manual data/manual.json
+```
+
+`compare` affiche le face-à-face par article (prix normalisé, meilleur
+retenu, écart), puis l\'affectation par personne avec l\'arbitrage du détour
+et l\'alerte de minimum de commande.
+
 Ce qui ne demande AUCUNE page : Action, Lidl, Aldi, Netto (pas de drive, le
 prix catalogue est le prix magasin — liste papier automatique), les fruits et
 légumes (hors périmètre), et les postes à stocker sans signal de promo — le
