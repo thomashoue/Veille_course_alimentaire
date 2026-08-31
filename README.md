@@ -181,6 +181,10 @@ On ne vérifie pas les 26 articles du panier : les agrégateurs orientent, et
 seules les pistes se vérifient (constat C1).
 
 ```bash
+# 0. Ouvrir les recherches comme onglets dans le navigateur déjà connecté
+#    (aucun cookie copié : c'est votre navigateur, les drives ne le bloquent pas)
+python -m src.cli open-tabs --store leclerc_pleumeleuc --bulk
+
 # 1. Automatique : les agrégateurs remontent les pistes, avec les URL à ouvrir
 python -m src.cli shortlist
 

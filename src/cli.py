@@ -221,6 +221,66 @@ def _extract_json_array(text: str) -> str:
     return text[start : end + 1]
 
 
+def cmd_open_tabs(args: argparse.Namespace) -> int:
+    """Ouvre les recherches de drive comme onglets dans le navigateur PAR DÉFAUT.
+
+    Aucun cookie n'est extrait ni copié : les onglets s'ouvrent dans VOTRE
+    navigateur, celui où vous êtes déjà connecté, qui apporte lui-même sa
+    session. C'est la seule automatisation qui a un sens ici — les drives
+    bloquent l'automatisation, pas votre navigateur.
+
+    Optionnellement, écrit un .bat/.sh rejouable au lieu d'ouvrir tout de suite.
+    """
+    import webbrowser
+
+    config = get_config(args.config)
+    store = config.store(args.store)
+
+    if args.items:
+        items = [config.item(i) for i in args.items if i in config.items]
+    elif args.bulk:
+        items = [i for i in config.items.values() if i.bulk_worthy]
+    else:
+        items = [
+            i for i in config.items.values()
+            if not i.out_of_scope_drive and i.category != "fl"
+        ]
+
+    urls: list[tuple[str, str]] = []
+    for item in items:
+        query = item.keywords[0] if item.keywords else item.label
+        url = store.search_url(query)
+        if url:
+            urls.append((item.label, url))
+
+    if not urls:
+        print(f"Aucune URL de recherche pour {store.name} (drive non configuré ?).")
+        return 1
+
+    if args.script:
+        path = Path(args.script)
+        if sys.platform == "win32":
+            lines = ["@echo off", f"rem Recherches drive — {store.name}"]
+            lines += [f'start "" "{url}"' for _, url in urls]
+        else:
+            opener = "open" if sys.platform == "darwin" else "xdg-open"
+            lines = ["#!/bin/sh", f"# Recherches drive — {store.name}"]
+            lines += [f'{opener} "{url}"' for _, url in urls]
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"{len(urls)} recherche(s) écrites dans {path} — lancez-le quand vous voulez.")
+        return 0
+
+    print(f"Ouverture de {len(urls)} recherche(s) dans votre navigateur par défaut "
+          f"({store.name})…")
+    print("Aucun cookie n'est copié : c'est votre navigateur, déjà connecté.\n")
+    for label, url in urls:
+        print(f"  · {label}")
+        webbrowser.open_new_tab(url)
+    print("\nEnregistrez les pages (Ctrl+S, ou SingleFile « tous les onglets »), puis :")
+    print(f"  python -m src.cli parse-page --store {store.id} --dir <dossier>")
+    return 0
+
+
 def cmd_paste(args: argparse.Namespace) -> int:
     """Importe des relevés JSON depuis le presse-papiers (ou un fichier/stdin).
 
@@ -529,6 +589,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--append", action="store_true", help="ajouter aux relevés existants"
     )
     parse_page.set_defaults(func=cmd_parse_page)
+
+    open_tabs = sub.add_parser(
+        "open-tabs",
+        help="ouvrir les recherches de drive comme onglets dans le navigateur par défaut",
+    )
+    open_tabs.add_argument("--store", required=True)
+    open_tabs.add_argument("--items", nargs="*", help="articles précis (défaut : tout le drive)")
+    open_tabs.add_argument("--bulk", action="store_true", help="seulement les postes à stocker")
+    open_tabs.add_argument("--script", help="écrire un .bat/.sh rejouable au lieu d'ouvrir")
+    open_tabs.set_defaults(func=cmd_open_tabs)
 
     paste = sub.add_parser(
         "paste",

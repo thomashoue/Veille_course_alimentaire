@@ -302,3 +302,44 @@ class TestPaste:
     def test_texte_sans_json(self, config, tmp_path):
         code, _ = self._paste(tmp_path, "désolé, je n'ai rien trouvé")
         assert code == 2
+
+
+class TestOpenTabs:
+    """Génération des onglets de recherche — sans réseau, sans cookie."""
+
+    def test_script_windows(self, config, tmp_path, monkeypatch):
+        import sys as sysmod
+
+        from src.cli import main
+
+        monkeypatch.setattr(sysmod, "platform", "win32")
+        script = tmp_path / "ouvrir.bat"
+        code = main(["open-tabs", "--store", "leclerc_pleumeleuc",
+                     "--bulk", "--script", str(script)])
+        assert code == 0
+        contenu = script.read_text(encoding="utf-8")
+        assert "start" in contenu
+        assert "leclercdrive.fr" in contenu
+        # --bulk ne prend que les postes à stocker, pas tout le panier.
+        assert contenu.count("start") == sum(1 for i in config.items.values() if i.bulk_worthy)
+
+    def test_script_shell(self, config, tmp_path, monkeypatch):
+        import sys as sysmod
+
+        from src.cli import main
+
+        monkeypatch.setattr(sysmod, "platform", "linux")
+        script = tmp_path / "ouvrir.sh"
+        assert main(["open-tabs", "--store", "hyperu_yffiniac",
+                     "--items", "lait_demi_ecreme", "--script", str(script)]) == 0
+        assert "xdg-open" in script.read_text(encoding="utf-8")
+
+    def test_magasin_sans_url(self, config, tmp_path, monkeypatch):
+        import sys as sysmod
+
+        from src.cli import main
+
+        monkeypatch.setattr(sysmod, "platform", "linux")
+        # Action n'a pas d'URL de recherche drive.
+        code = main(["open-tabs", "--store", "action_pace", "--script", str(tmp_path / "x.sh")])
+        assert code == 1

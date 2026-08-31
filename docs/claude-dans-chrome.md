@@ -10,6 +10,10 @@ non comparable.
 
 ## Le circuit
 
+0. `python -m src.cli open-tabs --store leclerc_pleumeleuc --bulk` ouvre les
+   recherches comme onglets dans VOTRE navigateur (celui déjà connecté ;
+   aucun cookie n'est copié — les drives bloquent l'automatisation, pas votre
+   navigateur). `--script ouvrir.bat` écrit un fichier rejouable à la place.
 1. `python -m src.cli shortlist` → la liste des recherches à faire, avec les URL.
 2. Coller à Claude dans Chrome le prompt ci-dessous, complété avec ces URL.
 3. Copier sa réponse (Ctrl+C sur le bloc JSON), puis :
