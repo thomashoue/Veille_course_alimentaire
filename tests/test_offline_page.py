@@ -197,14 +197,18 @@ class TestPiegesLitiere:
         observations, _ = observations_from_page(piege_html, store, config)
         assert not any("rongeurs" in o.product_label for o in observations)
 
-    def test_le_prix_au_litre_pris_pour_le_prix_du_pack_est_suspect(self, piege_html, config):
+    def test_le_prix_au_litre_est_reconstruit_en_prix_de_pack(self, piege_html, config):
+        from src.normalize import normalize
+
         store = config.store("leclerc_pleumeleuc")
         observations, _ = observations_from_page(piege_html, store, config)
         agglo = next(o for o in observations if "agglomérante" in o.product_label)
-        # 1,32 € pour 15 L (0,088 €/L) alors que l'enseigne affiche 1,32 €/L :
-        # incohérent, et le motif propose le prix vraisemblable.
-        assert agglo.suspect_reason is not None
-        assert "19.80" in agglo.suspect_reason or "19,80" in agglo.suspect_reason
+        # Vignette sans prix de boîte, seulement « 1,32 € / l » : on reconstruit
+        # le prix du pack (1,32 €/L x 15 L = 19,80 €) au lieu de le prendre pour
+        # le prix de la boîte. Plus de quarantaine — le bug racine est corrigé.
+        assert agglo.price_eur == pytest.approx(19.80)
+        normalize(agglo, config)
+        assert agglo.unit_price == pytest.approx(1.32)
 
     def test_un_prix_coherent_ne_devient_pas_suspect(self, piege_html, config):
         store = config.store("leclerc_pleumeleuc")
@@ -364,3 +368,50 @@ class TestFauxPositifsIntermarche:
         # page de drive, même si le mot correspond.
         assert config.match_item("Oignons rouges 1kg") is None
         assert config.match_item("Oignons rouges 1kg", include_out_of_scope=True) is not None
+
+
+class TestGabaritIntermarche:
+    """Structure réelle des cartes Intermarché (relevé 2026-08-31, Montauban).
+
+    La carte affiche le prix de la boîte (2,44 €) ET le prix au kilo net
+    égoutté (28,05 €/Kg) dans des éléments distincts. Le lecteur prend la boîte,
+    lit le €/kg comme repère, et détecte le net égoutté (piège brut/égoutté).
+    """
+
+    @pytest.fixture
+    def inter_html(self):
+        return (FIXTURES / "intermarche_cards.html").read_text(encoding="utf-8")
+
+    def test_le_prix_de_la_boite_pas_le_prix_au_kilo(self, inter_html, config):
+        store = config.store("intermarche_montauban")
+        observations, _ = observations_from_page(inter_html, store, config)
+        odyssee = next(o for o in observations if "Odyssée" in o.product_label)
+        assert odyssee.price_eur == pytest.approx(2.44)     # la boîte, pas 28,05
+
+    def test_le_net_egoutte_est_detecte(self, inter_html, config):
+        store = config.store("intermarche_montauban")
+        observations, _ = observations_from_page(inter_html, store, config)
+        assert all(
+            o.weight_basis == "net_egoutte"
+            for o in observations if "sardine" in o.product_label.lower()
+        )
+
+    def test_la_suggestion_recette_par_personne_est_ignoree(self, inter_html, config):
+        store = config.store("intermarche_montauban")
+        observations, _ = observations_from_page(inter_html, store, config)
+        assert not any("Sandwich" in o.product_label for o in observations)
+
+    def test_le_magasin_actif_est_reconnu_malgre_la_ponctuation(self, inter_html, config):
+        # « Montauban-de-Bretagne » (config) == « Montauban De Bretagne » (page).
+        store = config.store("intermarche_montauban")
+        _, report = observations_from_page(inter_html, store, config)
+        assert report["store_city_seen"] is True
+
+    def test_comparaison_sardines_sur_net_egoutte(self, inter_html, config):
+        from src.normalize import normalize
+
+        store = config.store("intermarche_montauban")
+        observations, _ = observations_from_page(inter_html, store, config)
+        top = next(o for o in observations if "Top Budget" in o.product_label)
+        normalize(top, config)
+        assert top.unit_price == pytest.approx(8.6, abs=0.1)   # €/kg net, comparable

@@ -159,6 +159,20 @@ _UNIT_PRICE_RE = re.compile(
 )
 
 
+def parse_pack_price(text: str) -> float | None:
+    """Prix du PACK : premier prix qui n'est pas un €/kg ni un €/portion.
+
+    Intermarché affiche « la boîte de 87g net égoutté • 28,05 €/Kg » et parfois
+    « 5,82 €/pers » (suggestion recette). Aucun n'est le prix de la boîte : on
+    les masque avant de lire.
+    """
+    if not text:
+        return None
+    masked = _UNIT_PRICE_RE.sub(" ", text)
+    masked = re.sub(r"\d+[.,]\d{1,2}\s*€\s*/\s*\w+", " ", masked)   # €/pers, €/Kg
+    return parse_price(masked)
+
+
 def parse_unit_price(text: str) -> tuple[float, str] | None:
     """Lit le prix unitaire affiché par l'enseigne, s'il y en a un."""
     match = _UNIT_PRICE_RE.search(text or "")

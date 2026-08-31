@@ -85,12 +85,21 @@ class Source(str, Enum):
     AGGREGATOR = "aggregator"
 
 
-MECHANIC_SECOND_DISCOUNTS = {
-    "second_-30": 0.30,
-    "second_-50": 0.50,
-    "second_-60": 0.60,
-    "second_-70": 0.70,
-}
+def second_discount(mechanic: str | None) -> float | None:
+    """Fraction de remise d'une mécanique « 2ᵉ à -X% », pour tout X.
+
+    Vu en rayon Intermarché : « -68% SUR LE 2ème ». On ne fige plus une liste.
+    """
+    if not mechanic or not mechanic.startswith("second_-"):
+        return None
+    try:
+        return int(mechanic.rsplit("-", 1)[1].rstrip("%")) / 100.0
+    except (ValueError, IndexError):
+        return None
+
+
+# Rétrocompat : quelques valeurs nommées encore utilisées ici et là.
+MECHANIC_SECOND_DISCOUNTS = {f"second_-{p}": p / 100 for p in (30, 50, 60, 70)}
 
 
 @dataclass

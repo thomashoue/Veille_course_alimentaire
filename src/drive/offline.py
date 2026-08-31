@@ -26,6 +26,7 @@ from ..ingest.html_extract import (
     detect_mechanic,
     detect_weight_basis,
     extract_jsonld,
+    parse_pack_price,
     parse_price,
     parse_unit_price,
     to_text,
@@ -298,13 +299,26 @@ def products_from_blocks(html: str) -> list[DriveProduct]:
                 continue
             # Les sous-éléments typés d'abord, le texte brut en filet.
             price_text = _child_text(tile, _PRICE_CHILD)
-            price = parse_price(price_text) if price_text else parse_price(text)
+            price = parse_price(price_text) if price_text else parse_pack_price(text)
             regular_text = _child_text(tile, _REGULAR_CHILD)
             regular = parse_price(regular_text) if regular_text else None
             label = _clean_label(text)
-            if price is None or len(label) < 5:
+            if len(label) < 5:
                 continue
             unit_hint = parse_unit_price(_child_text(tile, _UNIT_CHILD) or text)
+            # Aucun prix de pack, mais un €/kg et un grammage (cas Intermarché) :
+            # on reconstruit le prix de la boîte, que le site donne implicitement.
+            if price is None and unit_hint is not None:
+                pack = parse_pack(label)
+                if pack is not None:
+                    from ..units import to_base
+                    try:
+                        base_per_unit = to_base(1, unit_hint[1])
+                        price = round(unit_hint[0] / base_per_unit * pack.total_base, 2)
+                    except Exception:
+                        price = None
+            if price is None:
+                continue
             found.append(
                 DriveProduct(
                     ref=(tile["attrs"].get("data-ref")
@@ -412,14 +426,16 @@ def observations_from_page(
             )
         )
 
-    page_text = strip_accents(to_text(html)).lower()
+    import re as _re
+    def _alnum(t): return _re.sub(r"[^a-z0-9]+", "", strip_accents(t).lower())
+    page_alnum = _alnum(to_text(html))
     report = {
         "method": method,
         # Piège Intermarché vécu : se connecter à un autre magasin bascule le
         # magasin actif de TOUT le compte. Si la ville attendue n'apparaît
         # nulle part dans la page, les prix sont peut-être ceux d'un autre
         # magasin — à vérifier avant de s'en servir.
-        "store_city_seen": strip_accents(store.city).lower() in page_text if store.city else True,
+        "store_city_seen": (_alnum(store.city) in page_alnum) if store.city else True,
         "products_found": len(products),
         "matched_to_basket": len(observations),
         "ignored_not_in_basket": unmatched,
