@@ -1,0 +1,20 @@
+[project]
+name = "veille-courses"
+version = "1.0.0"
+description = "Veille prix et remplissage de drive — foyer Montauban-de-Bretagne (35360)"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6.0", "requests>=2.31"]
+
+[project.optional-dependencies]
+drive = ["playwright>=1.40"]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+veille-courses = "src.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.setuptools]
+packages = ["src", "src.ingest", "src.drive"]

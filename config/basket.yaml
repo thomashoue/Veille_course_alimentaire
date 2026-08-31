@@ -1,0 +1,291 @@
+# Panier type — §2.2. Environ la moitié est non alimentaire : la veille couvre
+# tout le panier, pas seulement l'alimentaire.
+#
+# unit               : unité de comparaison (le prix normalisé est TOUJOURS ramené là)
+# bulk_worthy        : poste où l'achat en gros est rentable
+# hard_constraints   : contraintes de conformité évaluées AVANT le prix
+# attribute_rules    : comment déduire un attribut du libellé du drive
+#                      (ordre significatif : la première règle qui matche gagne)
+# out_of_scope_drive : article qu'on achète hors drive (Grand Frais, marché)
+
+items:
+  # ---------------- Crèmerie ----------------
+  - id: lait_demi_ecreme
+    label: Lait demi-écrémé
+    category: cremerie
+    unit: L
+    bulk_worthy: true
+    keywords: [lait demi-écrémé, lait demi ecreme]
+    qty_per_run: 12
+
+  - id: emmental_rape
+    label: Emmental râpé
+    category: cremerie
+    unit: kg
+    keywords: [emmental râpé, emmental rape]
+    qty_per_run: 1
+
+  - id: mozzarella
+    label: Mozzarella
+    category: cremerie
+    unit: kg
+    keywords: [mozzarella]
+    qty_per_run: 1
+
+  - id: comte
+    label: Comté
+    category: cremerie
+    unit: kg
+    keywords: [comté, comte]
+    qty_per_run: 1
+
+  - id: beurre
+    label: Beurre demi-sel
+    category: cremerie
+    unit: kg
+    keywords: [beurre]
+    qty_per_run: 1
+
+  # ---------------- Épicerie ----------------
+  - id: legumineuses_seches
+    label: Légumineuses sèches
+    category: epicerie
+    unit: kg
+    bulk_worthy: true
+    keywords: [lentilles, pois chiches, haricots secs, légumes secs]
+    qty_per_run: 2
+
+  - id: conserve_poisson
+    label: Conserves de poisson
+    category: conserve
+    unit: kg
+    bulk_worthy: true
+    keywords: [sardines, thon, maquereaux]
+    qty_per_run: 6
+    weight_basis_required: true
+
+  - id: cafe
+    label: Café
+    category: epicerie
+    unit: kg
+    bulk_worthy: true
+    keywords: [café moulu, cafe moulu, café grains]
+    qty_per_run: 1
+
+  - id: pates
+    label: Pâtes
+    category: epicerie
+    unit: kg
+    keywords: [pâtes, spaghetti, penne, coquillettes]
+    qty_per_run: 2
+
+  - id: riz
+    label: Riz
+    category: epicerie
+    unit: kg
+    keywords: [riz]
+    qty_per_run: 1
+
+  - id: huile_olive
+    label: Huile d'olive
+    category: epicerie
+    unit: L
+    keywords: [huile d'olive, huile olive]
+    qty_per_run: 1
+
+  # ---------------- Viande ----------------
+  - id: steak_hache
+    label: Steak haché
+    category: viande
+    unit: kg
+    keywords: [steak haché, steak hache, haché 5%]
+    qty_per_run: 1
+
+  - id: poulet
+    label: Filet de poulet
+    category: viande
+    unit: kg
+    keywords: [filet de poulet, escalope de poulet]
+    qty_per_run: 1
+
+  # ---------------- Animalerie ----------------
+  - id: litiere_chat
+    label: Litière chat
+    category: animalerie
+    unit: L
+    bulk_worthy: true
+    keywords: [litière, litiere]
+    qty_per_run: 1
+    # §2.2 : contrainte NON négociable. Une litière hors de ces deux types
+    # n'est pas une affaire, c'est un hors-sujet.
+    hard_constraints:
+      - "type in (silice, agglo_charbon)"
+    attribute_rules:
+      type:
+        silice: [silice, cristaux, silica, gel de silice]
+        agglo_charbon: [charbon actif, charbon-actif, agglomérante charbon, charbon]
+        vegetale: [végétale, vegetale, bois, rafle, tofu, papier, chanvre]
+        minerale: [argile, bentonite, minérale, minerale, sépiolite]
+    fallback_advice: >-
+      Aucune promo conforme (silice / agglomérante charbon actif) : acheter au
+      prix courant plutôt que d'attendre — repère U 5 L charbon actif à 0,92 €/L.
+
+  - id: croquettes_chat
+    label: Croquettes chat
+    category: animalerie
+    unit: kg
+    bulk_worthy: true
+    keywords: [croquettes chat, croquettes]
+    qty_per_run: 1
+
+  - id: sacs_litiere
+    label: Sacs à litière
+    category: animalerie
+    unit: unite
+    keywords: [sac à litière, sacs litière]
+    qty_per_run: 1
+
+  # ---------------- Droguerie ----------------
+  - id: lessive
+    label: Lessive
+    category: droguerie
+    unit: dose
+    bulk_worthy: true
+    keywords: [lessive]
+    qty_per_run: 1
+
+  - id: papier_toilette
+    label: Papier toilette
+    category: droguerie
+    unit: rouleau
+    bulk_worthy: true
+    keywords: [papier toilette, papier hygiénique]
+    qty_per_run: 24
+
+  - id: liquide_vaisselle
+    label: Liquide vaisselle
+    category: droguerie
+    unit: L
+    keywords: [liquide vaisselle]
+    qty_per_run: 1
+
+  - id: vinaigre
+    label: Vinaigre blanc
+    category: droguerie
+    unit: L
+    bulk_worthy: true
+    keywords: [vinaigre blanc, vinaigre ménager]
+    qty_per_run: 1
+    # Le spray est 3 à 5x plus cher au litre que le bidon : on le refuse.
+    hard_constraints:
+      - "format not in (spray)"
+    attribute_rules:
+      format:
+        spray: [spray, pulvérisateur prêt, vaporisateur]
+        bidon: [bidon, 5 l, 5l]
+    fallback_advice: Toujours le bidon 5 L + un pulvérisateur réutilisable.
+
+  - id: papier_cuisson
+    label: Papier cuisson
+    category: droguerie
+    unit: m
+    keywords: [papier cuisson, papier sulfurisé]
+    qty_per_run: 1
+
+  - id: essuie_tout
+    label: Essuie-tout
+    category: droguerie
+    unit: rouleau
+    keywords: [essuie-tout, essuie tout]
+    qty_per_run: 6
+
+  # ---------------- Hygiène ----------------
+  - id: gel_douche
+    label: Gel douche
+    category: hygiene
+    unit: L
+    keywords: [gel douche]
+    qty_per_run: 2
+
+  - id: dentifrice
+    label: Dentifrice
+    category: hygiene
+    unit: unite
+    keywords: [dentifrice]
+    qty_per_run: 2
+
+  - id: shampooing
+    label: Shampooing
+    category: hygiene
+    unit: L
+    keywords: [shampooing, shampoing]
+    qty_per_run: 1
+
+  # ---------------- Bière ----------------
+  - id: biere
+    label: Bière
+    category: biere
+    unit: L
+    keywords: [bière, biere]
+    qty_per_run: 1
+
+  # ---------------- Fruits & légumes : hors périmètre drive (§10) ----------------
+  - id: tomate
+    label: Tomates
+    category: fl
+    unit: kg
+    keywords: [tomate]
+    qty_per_run: 1
+    out_of_scope_drive: true
+  - id: pomme
+    label: Pommes
+    category: fl
+    unit: kg
+    keywords: [pomme]
+    qty_per_run: 2
+    out_of_scope_drive: true
+  - id: banane
+    label: Bananes
+    category: fl
+    unit: kg
+    keywords: [banane]
+    qty_per_run: 1
+    out_of_scope_drive: true
+  - id: carotte
+    label: Carottes
+    category: fl
+    unit: kg
+    keywords: [carotte]
+    qty_per_run: 1
+    out_of_scope_drive: true
+  - id: oignon
+    label: Oignons
+    category: fl
+    unit: kg
+    keywords: [oignon]
+    qty_per_run: 1
+    out_of_scope_drive: true
+  - id: pdt
+    label: Pommes de terre
+    category: fl
+    unit: kg
+    keywords: [pomme de terre, pommes de terre]
+    qty_per_run: 2
+    out_of_scope_drive: true
+  - id: courgette
+    label: Courgettes
+    category: fl
+    unit: kg
+    keywords: [courgette]
+    qty_per_run: 1
+    out_of_scope_drive: true
+  - id: salade
+    label: Salade
+    category: fl
+    unit: unite
+    keywords: [salade, laitue]
+    qty_per_run: 1
+    out_of_scope_drive: true
+
+# Magasins conseillés pour les articles hors périmètre drive.
+out_of_scope_stores: [grandfrais_tregueux]

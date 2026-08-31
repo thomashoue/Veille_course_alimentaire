@@ -1,0 +1,88 @@
+# Sources — §6. Ce qui marche, ce qui ne marche pas.
+# La deny-list est appliquée AVANT toute requête : une source listée ici n'est
+# jamais rappelée, même si un collecteur la construit par erreur.
+
+http:
+  user_agent: "veille-courses/1.0 (usage personnel, foyer Montauban-de-Bretagne)"
+  timeout_s: 20
+  delay_between_requests_s: 1.5
+  max_retries: 3
+  cache_ttl_h: 12
+  respect_robots_txt: true
+
+allow:
+  - promocatalogues.fr
+  - www.promocatalogues.fr
+  - vos-promos.fr
+  - www.vos-promos.fr
+  - bonial.fr
+  - www.bonial.fr
+  - action.com
+  - www.action.com
+  - zooplus.fr
+  - www.zooplus.fr
+  - maxizoo.fr
+  - www.maxizoo.fr
+  - agidra.com
+  - www.agidra.com
+  - foodomarket.com
+  - www.foodomarket.com
+  - intermarche.com
+  - www.intermarche.com
+  - coursesu.com
+  - www.coursesu.com
+  - leclercdrive.fr
+  - fd7-courses.leclercdrive.fr
+
+# À ne pas retenter — chaque entrée porte la raison constatée.
+deny:
+  anti-crise.fr: "ne répond pas / sans valeur"
+  e.leclerc: "403"
+  www.e.leclerc: "403"
+  auchan.fr: "enseigne exclue + prix masqué sans magasin"
+  carrefour.fr: "enseigne exclue"
+  supermarche.tv: "robots.txt"
+  lineaires.com: "robots.txt"
+  web-agri.fr: "robots.txt"
+  cataloguemate.fr: "pages de navigation sans détail produit"
+  kimbino.fr: "pages de navigation sans détail produit"
+  icatalogue.fr: "pages de navigation sans détail produit"
+  amazon.fr: "aucun prix structuré"
+
+collectors:
+  promocatalogues:
+    enabled: true
+    # ⚠ le slash final est significatif : sans lui la page est vide.
+    offer_url_template: "https://www.promocatalogues.fr/offres/{slug}/"
+    catalog_url_template: "https://www.promocatalogues.fr/magasins/{banner}/catalogues-promotions"
+    banner_slugs:
+      leclerc: e-leclerc
+      intermarche: intermarche
+      u: super-u
+      lidl: lidl
+      aldi: aldi
+      netto: netto
+  vospromos:
+    enabled: true
+    offer_url_template: "https://www.vos-promos.fr/produits/{slug}"
+  bonial:
+    enabled: false          # secondaire, bruité
+    offer_url_template: "https://www.bonial.fr/Promos/{slug}"
+  action:
+    enabled: true
+    note: "prix permanents, pas de promo — sert de référence droguerie"
+    search_url_template: "https://www.action.com/fr-fr/search/?q={q}"
+
+calendar:
+  # §6 : bascule des catalogues le 1er du mois, fin des opérations le samedi soir.
+  run_weekday: friday
+  run_hour: 18
+  note: >-
+    Les catalogues Leclerc de la semaine suivante n'arrivent chez les
+    agrégateurs que quelques jours avant : un run du dimanche ne voit pas le
+    catalogue du mardi.
+
+report:
+  recipients:
+    - houe.thomas@gmail.com
+    - charlotte.barbe.ergo@gmail.com

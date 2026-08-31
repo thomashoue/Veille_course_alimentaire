@@ -1,0 +1,107 @@
+# Seuils de décision — §4. Externalisés et versionnés : ne JAMAIS les remettre
+# en dur dans le code.
+#
+# unit    : unité du seuil, doit correspondre à l'unité de l'article (basket.yaml)
+# good    : en dessous → bonne affaire, on l'annonce
+# stock   : en dessous → on stocke (achat en gros)
+# ceiling : au-dessus → on refuse et on attend
+# note    : ce qui a servi à calibrer, pour ne pas re-débattre chaque semaine
+
+params:
+  # P8 — coût du détour : ~2,50 € d'économie pour ~25 km ⇒ 0,10 €/km.
+  cost_per_km: 0.10
+  # Marge minimale de gain net pour justifier un arrêt hors trajet.
+  min_net_gain_eur: 0.50
+  # Un « record » doit battre le précédent d'au moins ça, sinon c'est du bruit.
+  record_margin_pct: 2.0
+  # Fenêtre d'historique pour la tendance.
+  trend_weeks: 12
+  # Conversion poids brut → net égoutté (P5). Uniquement là où le ratio est
+  # connu : ailleurs on refuse de convertir et l'observation part en FLAG.
+  drained_ratios:
+    conserve: 0.70
+
+thresholds:
+  lait_demi_ecreme:
+    unit: L
+    good: 0.94
+    stock: 0.80
+    ceiling: 1.00
+    note: "0,80–0,94 €/L = bon. > 1 €/L → attendre, tendance baissière, pas d'urgence."
+
+  legumineuses_seches:
+    unit: kg
+    good: 2.50
+    note: "Référence gros 1,65–1,90 €/kg HT."
+
+  conserve_poisson:
+    unit: kg
+    good: 10.00
+    stock_mechanic: ["second_-50", "lot"]
+    note: "Pénurie sardines → stocker dès que correct. Repère atteignable 11,07 €/kg."
+
+  litiere_chat:
+    unit: L
+    good: 1.30
+    by_attribute:
+      type:
+        silice: {good: 1.30}
+        agglo_charbon: {good: 0.92, note: "Référence U 5 L à 4,59 €."}
+    note: "La contrainte de type prime sur le prix."
+
+  croquettes_chat:
+    unit: kg
+    good: 3.20
+    stock: 3.00
+    note: "Meilleur réel vérifié 3,07 €/kg."
+
+  lessive:
+    unit: dose
+    good: 0.20
+    alt:
+      unit: L
+      good: 2.00
+    note: "Meilleur relevé 0,094 €/lavage net."
+
+  papier_toilette:
+    unit: rouleau
+    good: 0.25
+    note: "Action 0,207 €/rl en prix permanent, imbattable."
+
+  liquide_vaisselle:
+    unit: L
+    good: 2.00
+
+  steak_hache:
+    unit: kg
+    good: 16.20
+    stock: 15.50
+    ceiling: 18.00
+    note: "15,50–16,20 €/kg = bon. > 18 €/kg → non."
+
+  emmental_rape:
+    unit: kg
+    good: 8.00
+    note: "Cote de gros 7,89 €/kg."
+
+  mozzarella:
+    unit: kg
+    good: 7.00
+
+  comte:
+    unit: kg
+    good: 17.50
+    ceiling: 21.90
+    note: "17,50–21,90 €/kg = PRIX NORMAL, pas une promo. Ne jamais l'annoncer comme affaire."
+    normal_range: [17.50, 21.90]
+
+  tomate:
+    unit: kg
+    good: 2.00
+    note: "Cours de gros 3,44 €/kg, +44 % sur 11 mois."
+
+  vinaigre:
+    unit: L
+    good: 1.10
+    stock: 0.80
+    note: "Bidon 0,80–1,10 €/L. Le spray est 3 à 5x plus cher : contrainte dure."

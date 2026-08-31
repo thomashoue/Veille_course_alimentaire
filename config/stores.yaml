@@ -1,0 +1,245 @@
+# Référentiel magasins — §2.1 de la spec.
+# corridor : 'home' | 'east' (Rennes, Charlotte) | 'west' (Ploufragan, Thomas)
+# detour_km : kilomètres SUPPLÉMENTAIRES par rapport au trajet domicile-travail
+#             (0 = sur le trajet ou à domicile). C'est cette valeur, et non
+#             distance_km, qui entre dans l'arbitrage de la règle P8.
+defaults:
+  currency: EUR
+
+stores:
+  # ---------------- Domicile ----------------
+  - id: intermarche_montauban
+    banner: intermarche
+    name: Intermarché Montauban-de-Bretagne
+    city: Montauban-de-Bretagne
+    postcode: "35360"
+    corridor: home
+    assignee: household
+    distance_km: 0
+    detour_km: 0
+    format: super
+    has_drive: true
+    drive_base_url: https://www.intermarche.com
+    search_url_template: "https://www.intermarche.com/recherche/{q}"
+
+  # ---------------- Corridor EST (Charlotte, Rennes) ----------------
+  - id: leclerc_pleumeleuc
+    banner: leclerc
+    name: E.Leclerc Pleumeleuc
+    city: Pleumeleuc
+    postcode: "35137"
+    corridor: east
+    assignee: charlotte
+    distance_km: 11
+    detour_km: 0
+    format: hyper
+    has_drive: true
+    drive_base_url: https://fd7-courses.leclercdrive.fr/magasin-173501-173501-Pleumeleuc
+    search_url_template: "{base}/recherche.aspx?TexteRecherche={q}"
+    cart_url_template: "{base}/detail-panier.aspx"
+
+  - id: superu_breteil
+    banner: u
+    name: Super U Breteil
+    city: Breteil
+    postcode: "35160"
+    corridor: east
+    assignee: charlotte
+    distance_km: 14
+    detour_km: 1
+    format: super
+    has_drive: true
+    drive_base_url: https://www.coursesu.com
+    search_url_template: "https://www.coursesu.com/recherche?q={q}"
+    cart_url_template: "https://www.coursesu.com/panier"
+
+  - id: hyperu_hermitage
+    banner: u
+    name: Hyper U L'Hermitage
+    city: L'Hermitage
+    postcode: "35590"
+    corridor: east
+    assignee: charlotte
+    distance_km: 23
+    detour_km: 2
+    format: hyper
+    has_drive: true
+    drive_base_url: https://www.coursesu.com
+    search_url_template: "https://www.coursesu.com/recherche?q={q}"
+    cart_url_template: "https://www.coursesu.com/panier"
+
+  - id: action_pace
+    banner: action
+    name: Action Pacé
+    city: Pacé
+    postcode: "35740"
+    corridor: east
+    assignee: charlotte
+    distance_km: 24
+    detour_km: 3
+    format: discount
+    has_drive: false
+
+  # ---------------- Corridor OUEST (Thomas, Ploufragan) ----------------
+  - id: leclerc_ploufragan
+    banner: leclerc
+    name: E.Leclerc Ploufragan
+    city: Ploufragan
+    postcode: "22440"
+    corridor: west
+    assignee: thomas
+    distance_km: 69
+    detour_km: 2
+    format: hyper
+    has_drive: true
+    drive_base_url: https://fd7-courses.leclercdrive.fr/magasin-223610-223610-Ploufragan
+    search_url_template: "{base}/recherche.aspx?TexteRecherche={q}"
+    cart_url_template: "{base}/detail-panier.aspx"
+
+  - id: intermarche_lamballe
+    banner: intermarche
+    name: Intermarché Hyper Lamballe
+    city: Lamballe
+    postcode: "22400"
+    corridor: west
+    assignee: thomas
+    distance_km: 50
+    detour_km: 4
+    format: hyper
+    has_drive: true
+    drive_base_url: https://www.intermarche.com
+    search_url_template: "https://www.intermarche.com/recherche/{q}"
+
+  - id: intermarche_tregueux
+    banner: intermarche
+    name: Intermarché Trégueux
+    city: Trégueux
+    postcode: "22950"
+    corridor: west
+    assignee: thomas
+    distance_km: 66
+    detour_km: 3
+    format: super
+    has_drive: true
+    drive_base_url: https://www.intermarche.com
+    search_url_template: "https://www.intermarche.com/recherche/{q}"
+
+  - id: superu_yffiniac
+    banner: u
+    name: Super U Yffiniac
+    city: Yffiniac
+    postcode: "22120"
+    corridor: west
+    assignee: thomas
+    distance_km: 62
+    detour_km: 3
+    format: super
+    has_drive: true
+    drive_base_url: https://www.coursesu.com
+    search_url_template: "https://www.coursesu.com/recherche?q={q}"
+    cart_url_template: "https://www.coursesu.com/panier"
+
+  - id: lidl_langueux
+    banner: lidl
+    name: Lidl Langueux
+    city: Langueux
+    postcode: "22360"
+    corridor: west
+    assignee: thomas
+    distance_km: 65
+    detour_km: 3
+    format: discount
+    has_drive: false
+
+  - id: aldi_tregueux
+    banner: aldi
+    name: Aldi Trégueux
+    city: Trégueux
+    postcode: "22950"
+    corridor: west
+    assignee: thomas
+    distance_km: 66
+    detour_km: 3
+    format: discount
+    has_drive: false
+
+  - id: netto_ploufragan
+    banner: netto
+    name: Netto Ploufragan
+    city: Ploufragan
+    postcode: "22440"
+    corridor: west
+    assignee: thomas
+    distance_km: 69
+    detour_km: 3
+    format: discount
+    has_drive: false
+
+  - id: action_tregueux
+    banner: action
+    name: Action Trégueux
+    city: Trégueux
+    postcode: "22950"
+    corridor: west
+    assignee: thomas
+    distance_km: 66
+    detour_km: 3
+    format: discount
+    has_drive: false
+
+  - id: grandfrais_tregueux
+    banner: grandfrais
+    name: Grand Frais Trégueux
+    city: Trégueux
+    postcode: "22950"
+    corridor: west
+    assignee: thomas
+    distance_km: 66
+    detour_km: 3
+    format: super
+    has_drive: false
+
+  - id: maxizoo_langueux
+    banner: maxizoo
+    name: Maxi Zoo Langueux
+    city: Langueux
+    postcode: "22360"
+    corridor: west
+    assignee: thomas
+    distance_km: 65
+    detour_km: 3
+    format: super
+    has_drive: true          # click & collect 2 h
+    drive_base_url: https://www.maxizoo.fr
+
+  # ---------------- Exclusions dures (§2.1) ----------------
+  # Présentes volontairement dans le référentiel : le filtre d'entrée ET
+  # l'assertion de sortie ont ainsi quelque chose sur quoi mordre.
+  - id: carrefour_rennes
+    banner: carrefour
+    name: Carrefour Rennes
+    city: Rennes
+    postcode: "35000"
+    corridor: east
+    assignee: charlotte
+    distance_km: 32
+    detour_km: 6
+    format: hyper
+    has_drive: true
+    excluded: true
+
+  - id: auchan_saint_brieuc
+    banner: auchan
+    name: Auchan Saint-Brieuc
+    city: Saint-Brieuc
+    postcode: "22000"
+    corridor: west
+    assignee: thomas
+    distance_km: 68
+    detour_km: 5
+    format: hyper
+    has_drive: true
+    excluded: true
+
+# Enseignes bannies quelle que soit leur présence dans la liste ci-dessus.
+excluded_banners: [carrefour, auchan]

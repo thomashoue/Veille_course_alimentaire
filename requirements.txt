@@ -1,0 +1,10 @@
+PyYAML>=6.0
+requests>=2.31
+
+# Optionnel — uniquement pour piloter les drives (src/drive/).
+# Le reste du projet (normalize, validate, assign, report) tourne sans.
+#   pip install playwright && playwright install chromium
+# playwright>=1.40
+
+# Développement
+# pytest>=8.0

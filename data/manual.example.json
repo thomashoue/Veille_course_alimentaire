@@ -1,0 +1,64 @@
+[
+  {
+    "store_id": "superu_breteil",
+    "basket_item_id": "litiere_chat",
+    "product_label": "Litière agglomérante au charbon actif 5 L",
+    "price_eur": 4.59,
+    "source": "drive",
+    "verified_in_drive": true,
+    "notes": ["référence §4 : 0,92 €/L, le meilleur conforme trouvé en 3 semaines"]
+  },
+  {
+    "store_id": "action_tregueux",
+    "basket_item_id": "papier_toilette",
+    "product_label": "Papier toilette 24 rouleaux",
+    "price_eur": 4.97,
+    "source": "catalogue",
+    "notes": ["prix permanent Action : 0,207 €/rouleau, imbattable"]
+  },
+  {
+    "store_id": "leclerc_pleumeleuc",
+    "basket_item_id": "croquettes_chat",
+    "product_label": "Croquettes chat adulte 4 kg",
+    "price_eur": 12.28,
+    "source": "drive",
+    "verified_in_drive": true,
+    "notes": ["3,07 €/kg : meilleur réel vérifié"]
+  },
+  {
+    "store_id": "leclerc_pleumeleuc",
+    "basket_item_id": "conserve_poisson",
+    "product_label": "Sardines à l'huile d'olive 3x93 g",
+    "price_eur": 3.09,
+    "weight_basis": "net_egoutte",
+    "source": "drive",
+    "verified_in_drive": true,
+    "notes": ["11,07 €/kg : repère atteignable, pénurie sardines"]
+  },
+  {
+    "store_id": "intermarche_montauban",
+    "basket_item_id": "lait_demi_ecreme",
+    "product_label": "Lait demi-écrémé 6x1L",
+    "price_eur": 5.28,
+    "source": "drive",
+    "verified_in_drive": true
+  },
+  {
+    "store_id": "superu_breteil",
+    "basket_item_id": "vinaigre",
+    "product_label": "Vinaigre blanc bidon 5 L",
+    "price_eur": 4.75,
+    "source": "drive",
+    "verified_in_drive": true
+  },
+  {
+    "store_id": "leclerc_pleumeleuc",
+    "basket_item_id": "croquettes_chat",
+    "product_label": "Ultima croquettes chat 9 kg",
+    "price_eur": 26.95,
+    "regular_price": 53.90,
+    "source": "aggregator",
+    "verified_in_drive": false,
+    "notes": ["annoncée par l'agrégateur, absente du drive — piège P1 en prime"]
+  }
+]
