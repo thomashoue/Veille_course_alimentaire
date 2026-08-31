@@ -158,6 +158,47 @@ def cmd_capture(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_parse_page(args: argparse.Namespace) -> int:
+    """Lit une page de drive enregistrée depuis le navigateur habituel.
+
+    Aucun pilotage : c'est la voie qui reste ouverte quand le drive bloque les
+    navigateurs automatisés, et la plus durable des deux.
+    """
+    from .drive.offline import observations_from_page
+
+    config = get_config(args.config)
+    store = config.store(args.store)
+    html = Path(args.file).read_text(encoding=args.encoding, errors="replace")
+    observations, report = observations_from_page(html, store, config, source_url=args.url)
+
+    print(f"Page      : {args.file} ({report['page_size']} caractères)")
+    print(f"Méthode   : {report['method']}")
+    print(f"Produits  : {report['products_found']} lus, "
+          f"{report['matched_to_basket']} rattachés au panier, "
+          f"{report['ignored_not_in_basket']} hors panier")
+    if not observations:
+        print("\nRien d'exploitable. Deux causes possibles :")
+        print("  · la page enregistrée est la version « HTML seul » sans contenu ;")
+        print("  · le gabarit est inconnu — envoyez-moi le fichier, il servira de fixture.")
+        return 1
+
+    print()
+    for obs in observations:
+        print(f"  {obs.price_eur:>7.2f} €  {obs.pack_label():>14}  "
+              f"{config.item(obs.basket_item_id).label:<22} {obs.product_label[:55]}")
+
+    out = Path(args.out or (DATA_DIR / "manual.json"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    existing = []
+    if out.exists() and args.append:
+        existing = json.loads(out.read_text(encoding="utf-8"))
+    rows = existing + [obs.to_row() for obs in observations]
+    out.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\n{len(rows)} relevé(s) écrits dans {out}")
+    print(f"Ensuite : python -m src.cli run --no-drive --manual {out}")
+    return 0
+
+
 def cmd_history(args: argparse.Namespace) -> int:
     config = get_config(args.config)
     ledger = Ledger(args.ledger)
@@ -251,6 +292,20 @@ def build_parser() -> argparse.ArgumentParser:
     search.add_argument("--query", required=True)
     search.add_argument("--headful", action="store_true")
     search.set_defaults(func=cmd_search)
+
+    parse_page = sub.add_parser(
+        "parse-page",
+        help="lire une page de drive enregistrée depuis le navigateur (Ctrl+S)",
+    )
+    parse_page.add_argument("--store", required=True)
+    parse_page.add_argument("--file", required=True, help="fichier .html enregistré")
+    parse_page.add_argument("--url", help="URL d'origine, pour la traçabilité")
+    parse_page.add_argument("--out", help="fichier de relevés (défaut : data/manual.json)")
+    parse_page.add_argument("--encoding", default="utf-8")
+    parse_page.add_argument(
+        "--append", action="store_true", help="ajouter aux relevés existants"
+    )
+    parse_page.set_defaults(func=cmd_parse_page)
 
     capture = sub.add_parser(
         "capture",

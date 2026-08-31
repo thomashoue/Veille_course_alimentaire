@@ -147,6 +147,16 @@ relecture** (`cart_state`) et retentée. Les clics qui échouent silencieusement
 — le comportement constaté sur Leclerc Drive — sont rattrapés ; ce cas précis
 a son test.
 
+**Constat du 2026-08-31 — Leclerc Drive bloque les navigateurs pilotés.**
+Playwright, même sur un profil authentifié à la main, déclenche « Accès
+temporairement restreint — quelque chose dans le comportement du navigateur
+nous a intrigué ». Ce n'est pas un bug du code : c'est un contrôle d'accès
+délibéré du site. On ne cherche pas à le déguiser — ce serait une course sans
+fin, et ce n'est pas à nous d'en décider. La réponse est de **retirer
+l'automate du chemin** : voir `parse-page` ci-dessous, qui lit une page que
+vous avez enregistrée vous-même depuis votre navigateur habituel. L'invariant
+C1 tient toujours, puisque la page vient bien du drive.
+
 **Ce qui reste fragile, en toute franchise :** les sélecteurs DOM des trois
 drives et les gabarits des agrégateurs sont écrits d'après la spec et n'ont pas
 pu être confrontés aux sites en direct depuis cet environnement. Ils sont donc
@@ -156,9 +166,23 @@ page non vide — un rapport vide qui ressemble à « pas de promo » est pire
 qu'une erreur. La voie recommandée reste le **XHR** (`parse_search_xhr` est déjà
 là et testé) dès que les endpoints auront été relevés une fois, session ouverte.
 
-En attendant, `--manual data/relevés.json` permet de faire tourner toute la
-chaîne sur des relevés saisis à la main : c'est la voie de secours quand un
-gabarit casse, et elle donne exactement le même rapport.
+### La voie qui marche partout : `parse-page`
+
+Vous naviguez dans le drive **normalement**, dans votre navigateur habituel.
+Sur la page de résultats, `Ctrl+S` → « Page web complète ». Puis :
+
+```bash
+python -m src.cli parse-page --store leclerc_pleumeleuc --file "lait.html"
+python -m src.cli run --no-drive --manual data/manual.json
+```
+
+Aucun pilotage, donc rien à détecter, et rien qui casse quand le site change
+de pare-feu applicatif. Le module essaie trois lectures dans l'ordre : JSON-LD,
+JSON embarqué dans la page, puis les blocs HTML. Ajoutez `--append` pour
+empiler plusieurs recherches avant de lancer le run.
+
+`--manual` accepte aussi un JSON saisi entièrement à la main : c'est la
+dernière voie de secours, et elle donne exactement le même rapport.
 
 **Pièges déjà encodés :** propagation de session Leclerc vers
 `fd7-courses` (« Commencer mes courses »), modale de confirmation à la
