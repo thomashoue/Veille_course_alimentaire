@@ -28,7 +28,7 @@ echo
 
 for store in "${STORES[@]}"; do
   echo "--- $store : ouverture des recherches ---"
-  "$PY" -m src.cli open-tabs --store "$store" --bulk
+  "$PY" -m src.cli open-tabs --store "$store" --bulk --delay 4
 done
 
 echo

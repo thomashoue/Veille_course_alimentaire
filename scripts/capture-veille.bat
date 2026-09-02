@@ -18,7 +18,7 @@ echo.
 
 for %%S in (leclerc_pleumeleuc intermarche_montauban hyperu_yffiniac lidl_langueux aldi_tregueux) do (
   echo --- %%S : ouverture des recherches ---
-  python -m src.cli open-tabs --store %%S --bulk
+  python -m src.cli open-tabs --store %%S --bulk --delay 4
 )
 
 echo.

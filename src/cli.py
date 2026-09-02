@@ -339,9 +339,29 @@ def cmd_open_tabs(args: argparse.Namespace) -> int:
     for label, _ in urls:
         print(f"  · {label}")
 
+    delay = float(args.delay or 0)
     chromium = None if same_window else _find_chromium()
-    if chromium:
-        # Une seule fenêtre neuve avec tous les onglets, séparée de l'existant.
+
+    if delay > 0:
+        # Rythme humain : un onglet à la fois, avec pause. Ouvrir 9 recherches
+        # d'un coup déclenche l'anti-robot d'Intermarché (« vitesse surhumaine »).
+        import time
+
+        print(f"\nOuverture espacée de {delay:g}s ({store.name})…")
+        for i, url in enumerate(only_urls):
+            if chromium and i == 0:
+                import subprocess
+
+                subprocess.Popen([chromium, "--new-window", url])
+            elif chromium:
+                import subprocess
+
+                subprocess.Popen([chromium, url])          # onglet dans la fenêtre
+            else:
+                webbrowser.open(url, new=1 if i == 0 else 2, autoraise=(i == 0))
+            if i < len(only_urls) - 1:
+                time.sleep(delay)
+    elif chromium:
         import subprocess
 
         print(f"\nNouvelle fenêtre ({store.name}) — {len(only_urls)} onglet(s).")
@@ -351,7 +371,6 @@ def cmd_open_tabs(args: argparse.Namespace) -> int:
         for url in only_urls:
             webbrowser.open_new_tab(url)
     else:
-        # Pas de Chromium trouvé : au mieux, new=1 pour le premier.
         print(f"\nNouvelle fenêtre ({store.name}) via le navigateur par défaut…")
         for i, url in enumerate(only_urls):
             webbrowser.open(url, new=1 if i == 0 else 2, autoraise=(i == 0))
@@ -852,6 +871,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--same-window",
         action="store_true",
         help="ajouter aux onglets courants au lieu d'ouvrir une nouvelle fenêtre",
+    )
+    open_tabs.add_argument(
+        "--delay",
+        type=float,
+        default=0,
+        help="secondes entre chaque onglet (rythme humain, évite l'anti-robot). Ex : 4",
     )
     open_tabs.set_defaults(func=cmd_open_tabs)
 
