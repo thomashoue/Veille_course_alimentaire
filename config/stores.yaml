@@ -71,6 +71,19 @@ stores:
     search_url_template: "https://www.coursesu.com/recherche?q={q}"
     cart_url_template: "https://www.coursesu.com/panier"
 
+  - id: ecomiam_pleumeleuc
+    banner: ecomiam
+    name: Ecomiam Pleumeleuc
+    city: Pleumeleuc
+    postcode: "35137"
+    corridor: east
+    assignee: charlotte
+    distance_km: 11
+    detour_km: 0
+    format: discount            # spécialiste surgelés (poisson, viande)
+    has_drive: false            # click & collect existant, gabarit non calé
+    # drive_base_url: https://www.ecomiam.com  # à activer quand le lecteur sera prêt
+
   - id: action_pace
     banner: action
     name: Action Pacé

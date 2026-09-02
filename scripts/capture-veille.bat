@@ -1,46 +1,46 @@
 @echo off
-REM Procedure de capture du vendredi - veille courses (Windows).
-REM Double-cliquez ce fichier, ou lancez-le depuis cmd.
-REM Vous enregistrez les pages vous-meme (Ctrl+S) ; le script fait le reste.
+REM Capture du vendredi - veille courses (Windows). Double-cliquez ce fichier.
+REM
+REM Pre-requis SingleFile (une fois) : Options -> Auto-sauvegarde :
+REM   - cocher "auto-sauvegarder apres le chargement de la page"
+REM   - delai apres chargement : 3 a 5 s (les drives sont lents)
+REM   - "sauvegarder avec SingleFile Companion" -> dossier captures
+REM Sans Companion, les pages vont dans Telechargements : mettez alors
+REM   set CAPTURES=%USERPROFILE%\Downloads   avant de lancer.
 setlocal enabledelayedexpansion
 cd /d "%~dp0.."
+if "%CAPTURES%"=="" set CAPTURES=captures
+if not exist "%CAPTURES%" mkdir "%CAPTURES%"
 
 echo === Veille courses - capture du vendredi ===
+echo Les pages s'enregistreront seules dans : %CAPTURES%\
 echo.
 
-call :capture leclerc_pleumeleuc    pages_leclerc "E.Leclerc Pleumeleuc"
-call :capture intermarche_montauban pages_inter   "Intermarche Montauban"
-call :capture hyperu_yffiniac       pages_u       "Hyper U Yffiniac"
+for %%S in (leclerc_pleumeleuc intermarche_montauban hyperu_yffiniac) do (
+  echo --- %%S : ouverture des recherches ---
+  python -m src.cli open-tabs --store %%S --bulk
+)
 
-echo === Lecture des pages enregistrees ===
+echo.
+echo ^>^> Laissez SingleFile enregistrer toutes les pages (delai 3-5 s chacune).
+echo    Appuyez sur une touche quand tout est enregistre dans %CAPTURES%\
+pause
+
+echo === Lecture (magasin auto-detecte par page) ===
 if exist data\manual.json del data\manual.json
-python -m src.cli parse-page --store leclerc_pleumeleuc    --dir pages_leclerc
-python -m src.cli parse-page --store intermarche_montauban --dir pages_inter --append
-python -m src.cli parse-page --store hyperu_yffiniac       --dir pages_u     --append
+python -m src.cli parse-page --dir "%CAPTURES%"
 
 echo.
 echo === Doutes a lever (fiche produit) ===
 python -m src.cli review --manual data/manual.json --prompt
 
 echo.
-echo === Comparatif ===
+echo === Comparatif (enseignes a drive) ===
 python -m src.cli compare --manual data/manual.json
 
 echo.
-echo Termine. Pour le rapport complet :
-echo   python -m src.cli run --no-drive --manual data/manual.json
-pause
-goto :eof
-
-:capture
-REM %1 = id magasin, %2 = dossier, %3 = nom lisible
-if not exist "%~2" mkdir "%~2"
-echo --- %~3 ---
-echo Ouverture des recherches dans votre navigateur...
-python -m src.cli open-tabs --store %~1 --bulk
+echo === Rapport complet + liste papier (Lidl, Aldi, Netto, Action...) ===
+python -m src.cli run --no-drive --manual data/manual.json --collect --out data/reports
 echo.
-echo ^>^> Enregistrez chaque page (Ctrl+S "page complete", ou SingleFile)
-echo    dans le dossier : %~2
+echo Rapport ecrit dans data\reports\. Termine.
 pause
-echo.
-goto :eof
