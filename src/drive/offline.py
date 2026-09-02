@@ -370,6 +370,68 @@ def extract_products(html: str) -> tuple[list[DriveProduct], str]:
     return [], "aucune"
 
 
+# Domaine de drive → enseigne. Une page SingleFile embarque l'URL source, donc
+# le domaine est présent et fiable pour reconnaître l'enseigne.
+_DRIVE_DOMAINS = {
+    "leclercdrive.fr": "leclerc",
+    "coursesu.com": "u",
+    "intermarche.com": "intermarche",
+}
+# Repli sur des marqueurs de gabarit si le domaine manque.
+_GABARIT_MARKERS = {
+    "leclerc": ("wcrs310", "leclercdrive"),
+    "intermarche": ("stime-product", "intermarche.com"),
+    "u": ("coursesu", "price-sales", "product-tile__name"),
+}
+
+
+def detect_store(html: str, config: Config) -> str | None:
+    """Reconnaît le magasin d'une page enregistrée, pour trier un dossier mêlé.
+
+    Ordre : URL de drive exacte du référentiel, puis enseigne par domaine ou
+    marqueur de gabarit, puis désambiguïsation par la ville quand plusieurs
+    magasins partagent l'enseigne.
+    """
+    low = (html or "").lower()
+
+    # URL de drive du référentiel, la PLUS SPÉCIFIQUE d'abord : l'URL complète
+    # d'Yffiniac (/drive-hyperu-yffiniac) doit l'emporter sur le coursesu.com
+    # générique d'un autre magasin U.
+    by_specificity = sorted(
+        (s for s in config.drive_stores() if s.drive_base_url),
+        key=lambda s: len(s.drive_base_url or ""),
+        reverse=True,
+    )
+    for store in by_specificity:
+        if store.drive_base_url.lower() in low:
+            return store.id
+
+    banner = None
+    for domain, b in _DRIVE_DOMAINS.items():
+        if domain in low:
+            banner = b
+            break
+    if banner is None:
+        for b, markers in _GABARIT_MARKERS.items():
+            if any(m in low for m in markers):
+                banner = b
+                break
+    if banner is None:
+        return None
+
+    candidates = [s for s in config.drive_stores() if s.banner == banner]
+    if len(candidates) == 1:
+        return candidates[0].id
+    if candidates:
+        alnum = re.sub(r"[^a-z0-9]+", "", strip_accents(to_text(html)).lower())
+        for store in candidates:
+            city = re.sub(r"[^a-z0-9]+", "", strip_accents(store.city).lower())
+            if city and city in alnum:
+                return store.id
+        return candidates[0].id
+    return None
+
+
 def observations_from_page(
     html: str,
     store,

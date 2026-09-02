@@ -132,9 +132,15 @@ def cmd_search(args: argparse.Namespace) -> int:
     return 0
 
 
-def _parse_directory(args: argparse.Namespace, config, store) -> int:
-    """Toutes les pages d'un dossier, en un seul relevé."""
-    from .drive.offline import observations_from_page
+def _parse_directory(args: argparse.Namespace, config) -> int:
+    """Toutes les pages d'un dossier, en un seul relevé.
+
+    Avec --store : tout rattaché à ce magasin. Sans --store (mode auto) : le
+    magasin de chaque page est détecté depuis son contenu — c'est ce qui permet
+    à SingleFile de tout déverser dans un seul dossier (Téléchargements compris)
+    sans tri manuel.
+    """
+    from .drive.offline import detect_store, observations_from_page
 
     directory = Path(args.dir)
     pages = sorted(directory.glob("*.htm*"))
@@ -142,12 +148,23 @@ def _parse_directory(args: argparse.Namespace, config, store) -> int:
         print(f"Aucun fichier .html dans {directory}")
         return 1
 
+    fixed_store = config.store(args.store) if args.store else None
     seen: dict[str, object] = {}
+    unrouted = 0
     for page in pages:
         html = page.read_text(encoding=args.encoding, errors="replace")
+        if fixed_store is not None:
+            store = fixed_store
+        else:
+            store_id = detect_store(html, config)
+            if store_id is None:
+                print(f"{page.name:<40} magasin non reconnu — ignoré")
+                unrouted += 1
+                continue
+            store = config.store(store_id)
         observations, report = observations_from_page(html, store, config)
-        alerte = "" if report.get("store_city_seen", True) else "  ⚠ ville absente de la page"
-        print(f"{page.name:<40} {report['method']:<14} "
+        alerte = "" if report.get("store_city_seen", True) else "  ⚠ ville absente"
+        print(f"{page.name:<40} {store.id:<22} "
               f"{report['matched_to_basket']} relevé(s){alerte}")
         for obs in observations:
             seen[obs.id] = obs
@@ -623,13 +640,17 @@ def cmd_parse_page(args: argparse.Namespace) -> int:
     from .drive.offline import analyze_page, observations_from_page
 
     config = get_config(args.config)
-    store = config.store(args.store)
 
     if args.dir:
-        return _parse_directory(args, config, store)
+        return _parse_directory(args, config)
+
     if not args.file:
         print("Il faut --file (une page) ou --dir (un dossier de pages).")
         return 2
+    if not args.store:
+        print("--store est requis avec --file (le dossier --dir le détecte seul).")
+        return 2
+    store = config.store(args.store)
 
     html = Path(args.file).read_text(encoding=args.encoding, errors="replace")
 
@@ -788,9 +809,9 @@ def build_parser() -> argparse.ArgumentParser:
         "parse-page",
         help="lire une page de drive enregistrée depuis le navigateur (Ctrl+S)",
     )
-    parse_page.add_argument("--store", required=True)
+    parse_page.add_argument("--store", help="magasin (optionnel avec --dir : détecté par page)")
     parse_page.add_argument("--file", help="fichier .html enregistré")
-    parse_page.add_argument("--dir", help="dossier de pages .html à lire d'un coup")
+    parse_page.add_argument("--dir", help="dossier de pages .html à lire d'un coup, magasin auto-détecté")
     parse_page.add_argument("--url", help="URL d'origine, pour la traçabilité")
     parse_page.add_argument("--out", help="fichier de relevés (défaut : data/manual.json)")
     parse_page.add_argument("--encoding", default="utf-8")

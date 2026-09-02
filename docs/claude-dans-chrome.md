@@ -89,3 +89,29 @@ elle est connue, et un prompt prêt à coller. L'extension ouvre ces quelques
 fiches — la fiche produit est propre et structurée, là où la liste tronque —
 relève le détail exact, et `paste` réabsorbe le JSON corrigé. On ne dépense la
 lecture par extension que sur ce qui doute, jamais sur tout le panier.
+
+
+## Zéro Ctrl+S : SingleFile auto-save + Companion
+
+SingleFile sait tout enregistrer seul, ce qui supprime le dernier geste manuel :
+
+1. Dans les options SingleFile → **Auto-sauvegarde** : cocher « auto-sauvegarder
+   après le chargement de la page ». Passer le **délai après chargement à 3–5 s**
+   (les drives sont lents : 1 s ne suffit pas à charger les prix).
+2. Cocher « sauvegarder la page avec SingleFile Companion » et installer le
+   Companion : il permet d'écrire ailleurs que dans Téléchargements — pointez-le
+   sur un dossier `captures`.
+3. Le vendredi : `python -m src.cli open-tabs --store … --bulk` (une fenêtre par
+   enseigne). Chaque page s'auto-enregistre dans `captures` au chargement.
+4. Un seul dossier, magasins mêlés : l'auto-détection s'en charge —
+
+```
+python -m src.cli parse-page --dir captures
+python -m src.cli compare --manual data/manual.json
+```
+
+`parse-page --dir` **sans `--store`** reconnaît chaque page (Leclerc, Intermarché,
+Hyper U) à son contenu et la range toute seule. Plus de tri, plus de copier-coller.
+
+Sans le Companion, les pages tombent dans Téléchargements — ça marche pareil :
+pointez simplement `parse-page --dir` sur votre dossier Téléchargements.

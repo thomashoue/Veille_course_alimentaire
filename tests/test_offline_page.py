@@ -415,3 +415,30 @@ class TestGabaritIntermarche:
         top = next(o for o in observations if "Top Budget" in o.product_label)
         normalize(top, config)
         assert top.unit_price == pytest.approx(8.6, abs=0.1)   # €/kg net, comparable
+
+
+class TestDetectStore:
+    """Auto-détection du magasin d'une page (dossier mêlé SingleFile)."""
+
+    def test_par_url_de_drive(self, config):
+        from src.drive.offline import detect_store
+
+        html = "<!-- https://fd7-courses.leclercdrive.fr/magasin-173501-173501-Pleumeleuc/x --><body>WCRS310</body>"
+        assert detect_store(html, config) == "leclerc_pleumeleuc"
+
+    def test_url_la_plus_specifique_gagne(self, config):
+        from src.drive.offline import detect_store
+
+        # coursesu.com générique ET /drive-hyperu-yffiniac : le plus précis gagne.
+        html = "<body>https://www.coursesu.com/drive-hyperu-yffiniac product-tile</body>"
+        assert detect_store(html, config) == "hyperu_yffiniac"
+
+    def test_par_gabarit_sans_url(self, config):
+        from src.drive.offline import detect_store
+
+        assert detect_store("<div class='stime-product-card-course'>x</div>", config) == "intermarche_montauban"
+
+    def test_page_non_reconnue(self, config):
+        from src.drive.offline import detect_store
+
+        assert detect_store("<html><body>rien</body></html>", config) is None
