@@ -8,3 +8,9 @@ data/cache/
 data/observations.sqlite
 data/reports/
 data/manual.json
+
+# Pages de drive enregistrées (SingleFile) et captures — jamais dans le dépôt
+captures/
+pages_*/
+*.html
+!tests/fixtures/*.html
