@@ -700,7 +700,21 @@ def cmd_parse_page(args: argparse.Namespace) -> int:
                                if any(t in k.lower() for t in ('nam','nom','label','libel','titl','price','prix','amount','montant'))}
                 if interesting:
                     print(f"        ex : {interesting}")
-            print("\n  Copiez ce bloc : les noms de champs suffisent à lire le catalogue.")
+            has_price_field = any(
+                any(t in k.lower() for t in ("price", "prix", "amount", "montant", "tarif"))
+                for sh in shapes for k in sh["keys"]
+            )
+            if not has_price_field:
+                print("\n  ⚠ Aucun champ de prix dans ce JSON : c'est l'ossature CMS de la")
+                print("  page (navigation, bannières), pas le catalogue. Les produits sont")
+                print("  chargés par un appel réseau APRÈS le chargement, absents du HTML")
+                print("  enregistré. Deux voies :")
+                print("    · augmenter le délai SingleFile à 5 s ET faire défiler les résultats")
+                print("      avant l'enregistrement, pour que les produits soient rendus ;")
+                print("    · sinon, lire la page à l'écran avec Claude dans Chrome (vision)")
+                print("      puis paste, ou passer par les agrégateurs (run --collect).")
+            else:
+                print("\n  Copiez ce bloc : les noms de champs suffisent à lire le catalogue.")
             return 0
         if not analysis["candidates"]:
             print("  (aucun)")
