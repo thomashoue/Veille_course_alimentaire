@@ -184,8 +184,11 @@ stores:
     distance_km: 66
     detour_km: 3
     format: discount
-    has_drive: false
-    offers_url: https://www.aldi-marche.fr/nos-offres/
+    has_drive: false            # pas de retrait en ligne, mais site cherchable
+    # Aldi a une VRAIE recherche produit (contrairement au flyer Lidl) : les
+    # prix s'affichent en texte, donc lisibles par parse-page une fois le
+    # gabarit calé. URL confirmée par l'utilisateur.
+    search_url_template: "https://www.aldi.fr/recherche.html?query={q}"
 
   - id: netto_ploufragan
     banner: netto
