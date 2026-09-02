@@ -259,6 +259,50 @@ magasin sélectionné (traité comme session incomplète, pas comme produit abse
 
 ---
 
+## Le jeudi : décider les menus en famille
+
+On n'achète plus par habitude, mais par **besoin** : les 7 dîners de la semaine
+décident la liste de courses. La page `web/menu-semaine.html` sert à la choisir
+sur une tablette ou un téléphone, à toucher.
+
+```bash
+# Lance le serveur sur le PC (celui qui fait la veille du vendredi).
+python -m src.cli menu --serve
+#   → Menu de la semaine servi sur http://localhost:8000/
+#   → Depuis la tablette (même wifi) : http://<IP-du-PC>:8000/
+```
+
+Chaque jour a un menu déroulant (+ un bouton 🎲 pour piocher), un curseur pour
+le nombre de parts, des filtres (rapide, four, mijoté, poisson…) et un bouton
+**Régénérer** qui repropose une semaine équilibrée (poisson plafonné à 2,
+protéines variées, sans répéter les semaines récentes). La colonne de droite
+recalcule la liste en direct, groupée en *À acheter au drive / Frais / Épicerie*.
+
+Le bouton **Valider** ne donne aucune commande à recopier : il écrit l'état
+directement sur le PC —
+
+* `data/menu_courant.json` — le menu et la liste, lus le vendredi par la veille prix ;
+* `data/menu_history.json` — la rotation anti-répétition ;
+* `data/inventory.json`    — le stock, décrémenté des ingrédients cuisinés.
+
+…puis propose le mail récapitulatif au foyer. Ouverte hors serveur (fichier
+statique, page partagée), la même page retombe simplement sur le mail.
+
+Les données de la page (recettes, catégories, destinataires) viennent de
+`config/recipes.yaml`, `config/basket.yaml` et `config/sources.yaml`. Servie,
+elle les relit à chaque fois ; pour rafraîchir l'instantané figé dans le
+fichier commité (utile si la page est partagée telle quelle) :
+
+```bash
+python scripts/build_menu_page.py
+```
+
+En ligne de commande, sans page : `menu --list` (recettes disponibles),
+`menu` (tirage), `menu --pick <ids> --cook --save` (verrouiller un choix),
+`stock` (inventaire courant).
+
+---
+
 ## Faire évoluer les réglages
 
 Rien de calibré ne se touche dans le code :

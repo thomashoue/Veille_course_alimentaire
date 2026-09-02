@@ -1,0 +1,323 @@
+<title>Menu de la semaine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --paper:#F5F1E8; --paper-2:#FBF8F1; --card:#FFFFFF;
+  --ink:#22282B; --ink-soft:#5A625F; --line:#E3DCCC;
+  --sea:#1F5C6B; --sea-deep:#164653; --sea-soft:#E1EDEE;
+  --paprika:#C15A2B;
+  --p-legumineuses:#5E7A52; --p-oeufs:#C79127; --p-fromage:#B8862E; --p-poisson:#1F6F7E;
+  --shadow:0 1px 2px rgba(30,40,40,.05), 0 6px 18px rgba(30,50,55,.06);
+  --radius:14px;
+}
+:root:not([data-theme="light"]){ @media (prefers-color-scheme:dark){
+  :root{ --paper:#14181A; --paper-2:#191E20; --card:#1E2427; --ink:#E9E4D9;
+    --ink-soft:#9AA39E; --line:#2C3439; --sea:#5AA6B8; --sea-deep:#7FC0CF;
+    --sea-soft:#213238; --paprika:#E0794A;
+    --p-legumineuses:#8AA87C; --p-oeufs:#D9AE58; --p-fromage:#D0A758; --p-poisson:#63B3C4;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.28); }
+}}
+:root[data-theme="dark"]{ --paper:#14181A; --paper-2:#191E20; --card:#1E2427; --ink:#E9E4D9;
+  --ink-soft:#9AA39E; --line:#2C3439; --sea:#5AA6B8; --sea-deep:#7FC0CF;
+  --sea-soft:#213238; --paprika:#E0794A;
+  --p-legumineuses:#8AA87C; --p-oeufs:#D9AE58; --p-fromage:#D0A758; --p-poisson:#63B3C4;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 22px rgba(0,0,0,.28); }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Public Sans",system-ui,sans-serif;line-height:1.5;
+  -webkit-text-size-adjust:100%;}
+.wrap{max-width:1100px;margin:0 auto;padding:clamp(16px,3vw,34px);}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 22px;
+  padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:22px;}
+.brand{flex:1 1 auto;min-width:240px;}
+.kicker{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--sea);font-weight:700;}
+h1{font-family:"Fraunces",Georgia,serif;font-weight:600;font-optical-sizing:auto;
+  font-size:clamp(1.9rem,4.4vw,2.9rem);line-height:1.02;margin:.12em 0 .1em;
+  letter-spacing:-.01em;text-wrap:balance;}
+.sub{color:var(--ink-soft);font-size:.98rem;max-width:52ch;}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.stepper{display:inline-flex;align-items:center;gap:2px;background:var(--card);
+  border:1px solid var(--line);border-radius:999px;padding:4px;box-shadow:var(--shadow);}
+.stepper button{width:34px;height:34px;border-radius:999px;border:0;cursor:pointer;
+  background:transparent;color:var(--ink);font-size:1.25rem;line-height:1;}
+.stepper button:hover{background:var(--sea-soft);}
+.stepper .val{min-width:104px;text-align:center;font-weight:600;font-size:.92rem;}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:999px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;
+  box-shadow:var(--shadow);display:inline-flex;align-items:center;gap:7px;}
+.btn:hover{border-color:var(--sea);color:var(--sea);}
+.btn--sea{background:var(--sea);border-color:var(--sea);color:#fff;}
+.btn--sea:hover{background:var(--sea-deep);border-color:var(--sea-deep);color:#fff;}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px;}
+.tag-toggle{font-size:.82rem;padding:6px 12px;border-radius:999px;border:1px solid var(--line);
+  background:var(--card);color:var(--ink-soft);cursor:pointer;user-select:none;}
+.tag-toggle[aria-pressed="true"]{background:var(--sea);border-color:var(--sea);color:#fff;}
+
+main{display:grid;grid-template-columns:1.35fr 1fr;gap:26px;align-items:start;}
+@media(max-width:860px){ main{grid-template-columns:1fr;} }
+
+.week{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:560px){ .week{grid-template-columns:1fr;} }
+.day{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+  padding:15px 15px 13px;box-shadow:var(--shadow);border-left:4px solid var(--p);
+  display:flex;flex-direction:column;gap:9px;}
+.day .eyebrow{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-soft);font-weight:700;}
+.day .dish{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:1.16rem;
+  line-height:1.14;margin:0;letter-spacing:-.005em;min-height:2.3em;}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.chip{font-size:.7rem;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:999px;
+  color:#fff;text-transform:capitalize;background:var(--p);}
+.dot{font-size:.72rem;color:var(--ink-soft);}
+.day .actions{display:flex;gap:8px;margin-top:auto;padding-top:4px;}
+select.pick{flex:1 1 auto;min-width:0;font:inherit;font-size:.86rem;padding:8px 10px;
+  border-radius:9px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);}
+.mini{border:1px solid var(--line);background:var(--paper-2);border-radius:9px;
+  padding:8px 11px;cursor:pointer;font-size:1rem;line-height:1;color:var(--ink);}
+.mini:hover{border-color:var(--sea);}
+
+aside.panel{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px 18px 20px;box-shadow:var(--shadow);position:sticky;top:16px;}
+aside h2{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:1.3rem;margin:.1em 0 .5em;}
+.group{margin:14px 0;}
+.group h4{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sea);
+  margin:0 0 7px;font-weight:700;display:flex;justify-content:space-between;align-items:baseline;}
+.group h4 small{color:var(--ink-soft);letter-spacing:0;text-transform:none;font-weight:500;}
+ul.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;}
+ul.items li{display:flex;justify-content:space-between;gap:12px;font-size:.9rem;
+  padding:3px 0;border-bottom:1px dotted var(--line);}
+ul.items li .q{color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.empty{color:var(--ink-soft);font-size:.86rem;font-style:italic;}
+.validate{width:100%;justify-content:center;margin-top:16px;font-size:1rem;padding:12px;}
+.output{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);
+  display:flex;flex-direction:column;gap:12px;}
+.output .row{display:flex;gap:9px;flex-wrap:wrap;}
+.cmd{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.78rem;background:var(--card);
+  border:1px solid var(--line);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:pre;
+  color:var(--ink);}
+.hint{font-size:.8rem;color:var(--ink-soft);}
+.hint.ok{color:var(--sea);font-weight:600;}
+.hint.warn{color:#b23c2e;font-weight:600;}
+.cmd-inline{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.82em;
+  background:var(--card);border:1px solid var(--line);border-radius:6px;padding:1px 6px;}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin:2px 0 20px;font-size:.78rem;color:var(--ink-soft);}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+:focus-visible{outline:2.5px solid var(--sea);outline-offset:2px;border-radius:6px;}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);
+  color:var(--paper);padding:10px 18px;border-radius:999px;font-size:.85rem;font-weight:600;
+  box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s;}
+.toast.show{opacity:1;}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="kicker">Jeudi soir · on décide en famille</div>
+      <h1>Menu de la semaine</h1>
+      <p class="sub">Sept dîners sans viande — poisson permis, doux pour les enfants. Changez un plat d'un geste ; la liste de courses se recalcule en direct.</p>
+    </div>
+    <div class="controls">
+      <div class="stepper" role="group" aria-label="Nombre de parts">
+        <button type="button" id="less" aria-label="Moins de parts">−</button>
+        <span class="val" id="parts">4 parts</span>
+        <button type="button" id="more" aria-label="Plus de parts">+</button>
+      </div>
+      <button class="btn" id="regen" type="button">↻ Régénérer</button>
+    </div>
+  </header>
+
+  <div class="legend" aria-hidden="true">
+    <span><i style="background:var(--p-legumineuses)"></i>légumineuses</span>
+    <span><i style="background:var(--p-oeufs)"></i>œufs</span>
+    <span><i style="background:var(--p-fromage)"></i>fromage</span>
+    <span><i style="background:var(--p-poisson)"></i>poisson</span>
+  </div>
+
+  <div class="filters" id="filters" aria-label="Filtrer les propositions">
+    <button class="tag-toggle" data-tag="rapide" aria-pressed="false" type="button">Rapide (&lt;30 min)</button>
+    <button class="tag-toggle" data-tag="four" aria-pressed="false" type="button">Au four</button>
+    <button class="tag-toggle" data-tag="mijote" aria-pressed="false" type="button">Mijoté</button>
+    <button class="tag-toggle" data-tag="batch" aria-pressed="false" type="button">Se garde / congèle</button>
+  </div>
+
+  <main>
+    <section class="week" id="week" aria-label="Les sept dîners"></section>
+    <aside class="panel">
+      <h2>Liste de courses</h2>
+      <div id="lists"></div>
+      <button class="btn btn--sea validate" id="validate" type="button">Valider la semaine</button>
+      <div class="output" id="output" hidden></div>
+    </aside>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script id="menu-data" type="application/json">{"servings_base": 4, "recipes": [{"id": "dahl_lentilles_corail", "name": "Dahl de lentilles corail au lait de coco + riz", "tags": ["vegetarien", "mijote", "batch"], "proteine": "legumineuses", "ingredients": [{"label": "lentilles corail", "qty": 0.3, "unit": "kg", "basket_item": "legumineuses_seches", "category": ""}, {"label": "lait de coco", "qty": 0.4, "unit": "L", "basket_item": null, "category": "epicerie"}, {"label": "tomates concassées", "qty": 0.4, "unit": "kg", "basket_item": null, "category": "epicerie"}, {"label": "oignon", "qty": 1, "unit": "unite", "basket_item": "oignon", "category": "fl"}, {"label": "carottes", "qty": 2, "unit": "unite", "basket_item": "carotte", "category": "fl"}, {"label": "riz basmati", "qty": 0.25, "unit": "kg", "basket_item": "riz", "category": ""}]}, {"id": "gratin_coquillettes_courgette", "name": "Gratin de coquillettes courgette-emmental", "tags": ["vegetarien", "four"], "proteine": "fromage", "ingredients": [{"label": "coquillettes", "qty": 0.4, "unit": "kg", "basket_item": "pates", "category": ""}, {"label": "courgettes", "qty": 2, "unit": "unite", "basket_item": "courgette", "category": "fl"}, {"label": "lait", "qty": 0.5, "unit": "L", "basket_item": "lait_demi_ecreme", "category": ""}, {"label": "beurre", "qty": 0.04, "unit": "kg", "basket_item": "beurre", "category": ""}, {"label": "emmental râpé", "qty": 0.15, "unit": "kg", "basket_item": "emmental_rape", "category": ""}, {"label": "farine", "qty": 0.04, "unit": "kg", "basket_item": null, "category": "epicerie"}]}, {"id": "omelette_pdt", "name": "Omelette aux pommes de terre + salade", "tags": ["vegetarien", "rapide"], "proteine": "oeufs", "ingredients": [{"label": "œufs", "qty": 8, "unit": "unite", "basket_item": "oeufs", "category": ""}, {"label": "pommes de terre", "qty": 0.6, "unit": "kg", "basket_item": "pdt", "category": "fl"}, {"label": "oignon", "qty": 1, "unit": "unite", "basket_item": "oignon", "category": "fl"}, {"label": "salade", "qty": 1, "unit": "unite", "basket_item": "salade", "category": "fl"}]}, {"id": "soupe_legumes_tartines", "name": "Soupe de légumes (+ lentilles) + tartines gratinées", "tags": ["vegetarien", "mijote", "batch", "saison_hiver"], "proteine": "legumineuses", "ingredients": [{"label": "poireaux", "qty": 2, "unit": "unite", "basket_item": null, "category": "fl"}, {"label": "carottes", "qty": 3, "unit": "unite", "basket_item": "carotte", "category": "fl"}, {"label": "pommes de terre", "qty": 0.4, "unit": "kg", "basket_item": "pdt", "category": "fl"}, {"label": "oignon", "qty": 1, "unit": "unite", "basket_item": "oignon", "category": "fl"}, {"label": "lentilles vertes", "qty": 0.15, "unit": "kg", "basket_item": "legumineuses_seches", "category": ""}, {"label": "emmental râpé", "qty": 0.1, "unit": "kg", "basket_item": "emmental_rape", "category": ""}]}, {"id": "pates_sardines_tomate", "name": "Pâtes tomate aux sardines", "tags": ["poisson", "rapide"], "proteine": "poisson", "ingredients": [{"label": "spaghetti", "qty": 0.4, "unit": "kg", "basket_item": "pates", "category": ""}, {"label": "sardines à l'huile", "qty": 2, "unit": "boite", "basket_item": "conserve_poisson", "category": ""}, {"label": "tomates concassées", "qty": 0.4, "unit": "kg", "basket_item": null, "category": "epicerie"}, {"label": "oignon", "qty": 1, "unit": "unite", "basket_item": "oignon", "category": "fl"}]}, {"id": "quiche_poireaux", "name": "Quiche aux poireaux", "tags": ["vegetarien", "four"], "proteine": "oeufs", "ingredients": [{"label": "pâte brisée", "qty": 1, "unit": "unite", "basket_item": null, "category": "epicerie"}, {"label": "œufs", "qty": 3, "unit": "unite", "basket_item": "oeufs", "category": ""}, {"label": "lait", "qty": 0.2, "unit": "L", "basket_item": "lait_demi_ecreme", "category": ""}, {"label": "poireaux", "qty": 3, "unit": "unite", "basket_item": null, "category": "fl"}, {"label": "emmental râpé", "qty": 0.1, "unit": "kg", "basket_item": "emmental_rape", "category": ""}]}, {"id": "curry_pois_chiches", "name": "Curry doux de légumes & pois chiches au lait de coco + riz", "tags": ["vegetarien", "mijote", "batch"], "proteine": "legumineuses", "ingredients": [{"label": "pois chiches", "qty": 0.25, "unit": "kg", "basket_item": "legumineuses_seches", "category": ""}, {"label": "lait de coco", "qty": 0.4, "unit": "L", "basket_item": null, "category": "epicerie"}, {"label": "courgette", "qty": 1, "unit": "unite", "basket_item": "courgette", "category": "fl"}, {"label": "carottes", "qty": 2, "unit": "unite", "basket_item": "carotte", "category": "fl"}, {"label": "patate douce", "qty": 0.4, "unit": "kg", "basket_item": null, "category": "fl"}, {"label": "riz", "qty": 0.25, "unit": "kg", "basket_item": "riz", "category": ""}]}, {"id": "risotto_petits_pois", "name": "Risotto crémeux aux petits pois", "tags": ["vegetarien", "mijote"], "proteine": "fromage", "ingredients": [{"label": "riz arborio", "qty": 0.3, "unit": "kg", "basket_item": "riz", "category": ""}, {"label": "petits pois surgelés", "qty": 0.3, "unit": "kg", "basket_item": null, "category": "fl"}, {"label": "oignon", "qty": 1, "unit": "unite", "basket_item": "oignon", "category": "fl"}, {"label": "parmesan ou comté", "qty": 0.08, "unit": "kg", "basket_item": "comte", "category": ""}, {"label": "beurre", "qty": 0.03, "unit": "kg", "basket_item": "beurre", "category": ""}]}, {"id": "galettes_pois_chiches", "name": "Galettes de pois chiches + poêlée de légumes", "tags": ["vegetarien"], "proteine": "legumineuses", "ingredients": [{"label": "pois chiches (farine ou cuits)", "qty": 0.25, "unit": "kg", "basket_item": "legumineuses_seches", "category": ""}, {"label": "courgette", "qty": 1, "unit": "unite", "basket_item": "courgette", "category": "fl"}, {"label": "carottes", "qty": 2, "unit": "unite", "basket_item": "carotte", "category": "fl"}, {"label": "œuf", "qty": 1, "unit": "unite", "basket_item": "oeufs", "category": ""}]}, {"id": "gratin_pdt_maquereau", "name": "Gratin de pommes de terre aux maquereaux", "tags": ["poisson", "four"], "proteine": "poisson", "ingredients": [{"label": "pommes de terre", "qty": 0.8, "unit": "kg", "basket_item": "pdt", "category": "fl"}, {"label": "filets de maquereau", "qty": 2, "unit": "boite", "basket_item": "conserve_poisson", "category": ""}, {"label": "lait", "qty": 0.3, "unit": "L", "basket_item": "lait_demi_ecreme", "category": ""}, {"label": "emmental râpé", "qty": 0.1, "unit": "kg", "basket_item": "emmental_rape", "category": ""}]}, {"id": "tarte_courgette_chevre", "name": "Tarte fine courgette-chèvre", "tags": ["vegetarien", "four", "saison_ete"], "proteine": "fromage", "ingredients": [{"label": "pâte feuilletée", "qty": 1, "unit": "unite", "basket_item": null, "category": "epicerie"}, {"label": "courgettes", "qty": 2, "unit": "unite", "basket_item": "courgette", "category": "fl"}, {"label": "bûche de chèvre", "qty": 0.15, "unit": "kg", "basket_item": null, "category": "cremerie"}, {"label": "huile d'olive", "qty": 0.02, "unit": "L", "basket_item": "huile_olive", "category": ""}]}, {"id": "chili_sin_carne", "name": "Chili sin carne doux (haricots rouges) + riz", "tags": ["vegetarien", "mijote", "batch"], "proteine": "legumineuses", "ingredients": [{"label": "haricots rouges", "qty": 0.3, "unit": "kg", "basket_item": "legumineuses_seches", "category": ""}, {"label": "tomates concassées", "qty": 0.4, "unit": "kg", "basket_item": null, "category": "epicerie"}, {"label": "maïs", "qty": 0.15, "unit": "kg", "basket_item": null, "category": "epicerie"}, {"label": "oignon", "qty": 1, "unit": "unite", "basket_item": "oignon", "category": "fl"}, {"label": "carotte", "qty": 1, "unit": "unite", "basket_item": "carotte", "category": "fl"}, {"label": "riz", "qty": 0.25, "unit": "kg", "basket_item": "riz", "category": ""}]}, {"id": "pates_saumon_epinards", "name": "Pâtes crémeuses saumon fumé & épinards", "tags": ["poisson", "rapide"], "proteine": "poisson", "ingredients": [{"label": "tagliatelles", "qty": 0.4, "unit": "kg", "basket_item": "pates", "category": ""}, {"label": "saumon fumé", "qty": 0.15, "unit": "kg", "basket_item": null, "category": "poisson"}, {"label": "pousses d'épinard", "qty": 0.15, "unit": "kg", "basket_item": null, "category": "fl"}, {"label": "crème fraîche", "qty": 0.2, "unit": "L", "basket_item": null, "category": "cremerie"}]}, {"id": "buddha_bowl_lentilles", "name": "Buddha bowl lentilles, riz, légumes rôtis", "tags": ["vegetarien", "four"], "proteine": "legumineuses", "ingredients": [{"label": "lentilles vertes", "qty": 0.2, "unit": "kg", "basket_item": "legumineuses_seches", "category": ""}, {"label": "riz complet", "qty": 0.25, "unit": "kg", "basket_item": "riz", "category": ""}, {"label": "carottes", "qty": 2, "unit": "unite", "basket_item": "carotte", "category": "fl"}, {"label": "courgette", "qty": 1, "unit": "unite", "basket_item": "courgette", "category": "fl"}, {"label": "huile d'olive", "qty": 0.03, "unit": "L", "basket_item": "huile_olive", "category": ""}]}, {"id": "croque_gratine_salade", "name": "Croque-monsieur gratinés + salade", "tags": ["vegetarien", "rapide"], "proteine": "fromage", "ingredients": [{"label": "pain de mie", "qty": 8, "unit": "unite", "basket_item": null, "category": "epicerie"}, {"label": "emmental râpé", "qty": 0.15, "unit": "kg", "basket_item": "emmental_rape", "category": ""}, {"label": "lait (béchamel)", "qty": 0.2, "unit": "L", "basket_item": "lait_demi_ecreme", "category": ""}, {"label": "salade", "qty": 1, "unit": "unite", "basket_item": "salade", "category": "fl"}]}, {"id": "poelee_semoule_legumes", "name": "Semoule aux légumes façon couscous (doux)", "tags": ["vegetarien", "rapide"], "proteine": "legumineuses", "ingredients": [{"label": "semoule", "qty": 0.3, "unit": "kg", "basket_item": null, "category": "epicerie"}, {"label": "pois chiches", "qty": 0.2, "unit": "kg", "basket_item": "legumineuses_seches", "category": ""}, {"label": "courgette", "qty": 1, "unit": "unite", "basket_item": "courgette", "category": "fl"}, {"label": "carottes", "qty": 2, "unit": "unite", "basket_item": "carotte", "category": "fl"}, {"label": "navet", "qty": 1, "unit": "unite", "basket_item": null, "category": "fl"}]}, {"id": "truite_riz_legumes", "name": "Papillote de truite, riz et petits légumes", "tags": ["poisson", "four"], "proteine": "poisson", "ingredients": [{"label": "filets de truite", "qty": 0.4, "unit": "kg", "basket_item": null, "category": "poisson"}, {"label": "riz", "qty": 0.25, "unit": "kg", "basket_item": "riz", "category": ""}, {"label": "carottes", "qty": 2, "unit": "unite", "basket_item": "carotte", "category": "fl"}, {"label": "courgette", "qty": 1, "unit": "unite", "basket_item": "courgette", "category": "fl"}, {"label": "beurre", "qty": 0.03, "unit": "kg", "basket_item": "beurre", "category": ""}]}, {"id": "gnocchis_tomate_mozza", "name": "Gnocchis à la tomate et mozzarella", "tags": ["vegetarien", "rapide"], "proteine": "fromage", "ingredients": [{"label": "gnocchis", "qty": 0.5, "unit": "kg", "basket_item": null, "category": "epicerie"}, {"label": "sauce tomate", "qty": 0.4, "unit": "kg", "basket_item": null, "category": "epicerie"}, {"label": "mozzarella", "qty": 0.25, "unit": "kg", "basket_item": "mozzarella", "category": ""}, {"label": "oignon", "qty": 1, "unit": "unite", "basket_item": "oignon", "category": "fl"}]}], "item_categories": {"lait_demi_ecreme": "cremerie", "emmental_rape": "cremerie", "mozzarella": "cremerie", "comte": "cremerie", "oeufs": "cremerie", "beurre": "cremerie", "legumineuses_seches": "epicerie", "conserve_poisson": "conserve", "cafe": "epicerie", "pates": "epicerie", "riz": "epicerie", "huile_olive": "epicerie", "steak_hache": "viande", "poulet": "viande", "litiere_chat": "animalerie", "croquettes_chat": "animalerie", "sacs_litiere": "animalerie", "lessive": "droguerie", "papier_toilette": "droguerie", "liquide_vaisselle": "droguerie", "vinaigre": "droguerie", "papier_cuisson": "droguerie", "essuie_tout": "droguerie", "gel_douche": "hygiene", "dentifrice": "hygiene", "shampooing": "hygiene", "biere": "biere", "tomate": "fl", "pomme": "fl", "banane": "fl", "carotte": "fl", "oignon": "fl", "pdt": "fl", "courgette": "fl", "salade": "fl"}, "recipients": ["houe.thomas@gmail.com", "charlotte.barbe.ergo@gmail.com"]}</script>
+<script>
+const DATA = JSON.parse(document.getElementById('menu-data').textContent);
+const JOURS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+const RECIPES = DATA.recipes;
+const BYID = Object.fromEntries(RECIPES.map(r=>[r.id,r]));
+const FRESH_CATS = new Set(["fl","poisson"]);
+const PCLASS = {legumineuses:"--p-legumineuses",oeufs:"--p-oeufs",fromage:"--p-fromage",poisson:"--p-poisson"};
+
+let state = load() || {servings:4, week:planWeek(new Set()), filters:[]};
+function save(){ try{localStorage.setItem("menu-semaine",JSON.stringify(state));}catch(e){} }
+function load(){ try{const v=localStorage.getItem("menu-semaine");return v?JSON.parse(v):null;}catch(e){return null;} }
+
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function planWeek(filterTags){
+  let pool = RECIPES.filter(r => [...filterTags].every(t=>r.tags.includes(t)));
+  if(pool.length < 7) pool = RECIPES.slice();
+  pool = shuffle(pool);
+  const chosen=[]; let fish=0; const prot={};
+  for(const r of pool){ if(chosen.length>=7) break;
+    const isFish = r.proteine==="poisson";
+    if(isFish && fish>=2) continue;
+    if((prot[r.proteine]||0)>=3) continue;
+    chosen.push(r.id); prot[r.proteine]=(prot[r.proteine]||0)+1; if(isFish)fish++; }
+  for(const r of pool){ if(chosen.length>=7) break;
+    if(chosen.includes(r.id)) continue;
+    if(r.proteine==="poisson" && fish>=2) continue;
+    chosen.push(r.id); if(r.proteine==="poisson")fish++; }
+  return chosen.slice(0,7);
+}
+
+function renderWeek(){
+  const el = document.getElementById('week'); el.innerHTML="";
+  const options = RECIPES.slice().sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  state.week.forEach((id,day)=>{
+    const r = BYID[id];
+    const art = document.createElement('article');
+    art.className='day';
+    art.style.setProperty('--p', `var(${PCLASS[r.proteine]||'--sea'})`);
+    const tags = r.tags.filter(t=>t!==r.proteine).slice(0,2).map(t=>`<span class="dot">· ${t}</span>`).join(" ");
+    art.innerHTML = `
+      <div class="eyebrow">${JOURS[day]}</div>
+      <h3 class="dish">${r.name}</h3>
+      <div class="meta"><span class="chip">${r.proteine||"végé"}</span>${tags}</div>
+      <div class="actions">
+        <select class="pick" aria-label="Choisir le plat du ${JOURS[day]}">
+          ${options.map(o=>`<option value="${o.id}" ${o.id===id?'selected':''}>${o.name}</option>`).join("")}
+        </select>
+        <button class="mini" type="button" title="Autre plat au hasard" aria-label="Autre plat">🎲</button>
+      </div>`;
+    art.querySelector('select').addEventListener('change',e=>{ state.week[day]=e.target.value; commit(); });
+    art.querySelector('.mini').addEventListener('click',()=>{
+      const used=new Set(state.week); const cands=RECIPES.filter(x=>!used.has(x.id));
+      const pool = cands.length?cands:RECIPES.filter(x=>x.id!==id);
+      state.week[day]=pool[Math.floor(Math.random()*pool.length)].id; commit();
+    });
+    el.appendChild(art);
+  });
+}
+
+function buildList(){
+  const scale = state.servings/DATA.servings_base;
+  const agg = {};
+  state.week.forEach(id=>BYID[id].ingredients.forEach(ing=>{
+    const key = (ing.basket_item||ing.label.toLowerCase())+"|"+ing.unit;
+    if(!agg[key]) agg[key]={label:ing.label,qty:0,unit:ing.unit,basket_item:ing.basket_item,category:ing.category};
+    agg[key].qty += ing.qty*scale;
+  }));
+  const buy=[],fresh=[],pantry=[];
+  Object.values(agg).forEach(l=>{ l.qty=Math.round(l.qty*100)/100;
+    if(FRESH_CATS.has(l.category)) fresh.push(l);
+    else if(l.basket_item && DATA.item_categories[l.basket_item]!==undefined) buy.push(l);
+    else pantry.push(l);
+  });
+  buy.sort((a,b)=>(DATA.item_categories[a.basket_item]||"").localeCompare(DATA.item_categories[b.basket_item]||""));
+  fresh.sort((a,b)=>a.label.localeCompare(b.label,'fr'));
+  pantry.sort((a,b)=>a.label.localeCompare(b.label,'fr'));
+  return {buy,fresh,pantry};
+}
+function fmtQty(l){ let q=l.unit==='unite'?Math.round(l.qty):l.qty; return `${q} ${l.unit==='unite'?'':l.unit}`.trim(); }
+
+function renderList(){
+  const {buy,fresh,pantry}=buildList();
+  const grp=(title,note,arr)=> `<div class="group"><h4>${title}${note?` <small>${note}</small>`:''}</h4>`+
+    (arr.length? `<ul class="items">${arr.map(l=>`<li><span>${l.label}</span><span class="q">${fmtQty(l)}</span></li>`).join("")}</ul>`
+      : `<p class="empty">rien cette semaine</p>`)+`</div>`;
+  document.getElementById('lists').innerHTML =
+    grp("À acheter au drive","prix comparés",buy)+
+    grp("Frais","marché · Grand Frais · Ecomiam",fresh)+
+    grp("Épicerie","",pantry);
+}
+
+function commit(){ save(); renderWeek(); renderList(); document.getElementById('output').hidden=true; }
+
+// Controls
+function setParts(n){ state.servings=Math.max(2,Math.min(10,n));
+  document.getElementById('parts').textContent = state.servings+" parts"; commit(); }
+document.getElementById('less').onclick=()=>setParts(state.servings-1);
+document.getElementById('more').onclick=()=>setParts(state.servings+1);
+document.getElementById('regen').onclick=()=>{ state.week=planWeek(new Set(state.filters)); commit(); };
+document.querySelectorAll('.tag-toggle').forEach(b=>b.addEventListener('click',()=>{
+  const t=b.dataset.tag, on=b.getAttribute('aria-pressed')==='true';
+  b.setAttribute('aria-pressed', String(!on));
+  state.filters = on ? state.filters.filter(x=>x!==t) : [...state.filters,t]; save();
+}));
+
+// Validate → command + mail
+function recap(){
+  const menu = state.week.map((id,i)=>`${JOURS[i]} — ${BYID[id].name}`).join("\n");
+  const {buy,fresh,pantry}=buildList();
+  const sec=(t,a)=> a.length? `\n${t}\n`+a.map(l=>`  - ${l.label} : ${fmtQty(l)}`).join("\n") : "";
+  const liste = `À ACHETER AU DRIVE (prix comparés)`+sec("",buy)+
+    `\n\nFRAIS (marché / Grand Frais / Ecomiam)`+sec("",fresh)+
+    (pantry.length?`\n\nÉPICERIE`+sec("",pantry):"");
+  return {menu, liste, ids: state.week.join(",")};
+}
+document.getElementById('validate').onclick=async ()=>{
+  const {menu,liste}=recap();
+  const subject = encodeURIComponent(`Menu de la semaine — ${new Date().toLocaleDateString('fr-FR')}`);
+  const body = encodeURIComponent(`Menu décidé en famille :\n\n${menu}\n\n— — —\nLISTE DE COURSES (${state.servings} parts)\n\n${liste}\n`);
+  const to = (DATA.recipients||[]).join(",");
+  const mailBtn = `<a class="btn btn--sea" href="mailto:${to}?subject=${subject}&body=${body}">✉ Envoyer le récapitulatif par mail</a>`;
+  const out = document.getElementById('output');
+  const btn = document.getElementById('validate');
+  out.hidden=false;
+  btn.disabled=true; btn.textContent="Validation…";
+  let saved=false, err=null;
+  try{
+    const r = await fetch('/api/validate',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ids: state.week, servings: state.servings})});
+    if(r.ok){ saved=true; }
+    else { const j = await r.json().catch(()=>({})); err = j.error || ('HTTP '+r.status); }
+  }catch(e){ err='offline'; }
+  btn.disabled=false; btn.textContent="Valider la semaine";
+  if(saved){
+    out.innerHTML = `
+      <div class="hint ok">✅ Semaine enregistrée sur l'ordinateur : stock mis à jour, historique gardé.</div>
+      <div class="hint">Le vendredi, cette liste passe automatiquement dans la veille prix.</div>
+      <div class="row">${mailBtn}</div>`;
+    toast("Semaine enregistrée");
+  } else if(err==='offline'){
+    out.innerHTML = `
+      <div class="hint">Page ouverte hors de l'outil : le mail ci-dessous transmet le menu au foyer.</div>
+      <div class="row">${mailBtn}</div>
+      <div class="hint">Pour enregistrer d'un seul clic (stock, historique, liste du vendredi),
+      ouvrez la page servie par l'outil : <span class="cmd-inline">python -m src.cli menu --serve</span>.</div>`;
+  } else {
+    out.innerHTML = `<div class="hint warn">Enregistrement impossible : ${err}</div>
+      <div class="row">${mailBtn}</div>`;
+  }
+  out.scrollIntoView({behavior:'smooth',block:'nearest'});
+};
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1600); }
+
+// restore filter buttons
+(state.filters||[]).forEach(t=>{ const b=document.querySelector(`.tag-toggle[data-tag="${t}"]`); if(b)b.setAttribute('aria-pressed','true'); });
+document.getElementById('parts').textContent = state.servings+" parts";
+renderWeek(); renderList();
+</script>

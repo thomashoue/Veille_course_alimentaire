@@ -656,6 +656,11 @@ def cmd_menu(args: argparse.Namespace) -> int:
         print("Aucune recette : config/recipes.yaml manquant.")
         return 1
 
+    if getattr(args, "serve", False):
+        from .webmenu import serve
+        serve(config, host=args.host, port=args.port)
+        return 0
+
     if args.list:
         print("=== Recettes disponibles (id — nom) ===")
         for r in config.recipes.values():
@@ -1058,6 +1063,11 @@ def build_parser() -> argparse.ArgumentParser:
                       help="décompter ces repas du stock (les ingrédients sont consommés)")
     menu.add_argument("--ignore-stock", action="store_true",
                       help="ne pas déduire le garde-manger (besoin brut)")
+    menu.add_argument("--serve", action="store_true",
+                      help="servir la page « Menu de la semaine » (validation d'un clic)")
+    menu.add_argument("--host", default="0.0.0.0",
+                      help="interface d'écoute du serveur (défaut : 0.0.0.0, accessible sur le wifi)")
+    menu.add_argument("--port", type=int, default=8000, help="port du serveur (défaut 8000)")
     menu.set_defaults(func=cmd_menu)
 
     stock = sub.add_parser("stock", help="inventaire du garde-manger (acheté − consommé)")

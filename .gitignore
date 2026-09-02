@@ -14,5 +14,7 @@ captures/
 pages_*/
 *.html
 !tests/fixtures/*.html
+!web/*.html
 data/menu_history.json
 data/inventory.json
+data/menu_courant.json
