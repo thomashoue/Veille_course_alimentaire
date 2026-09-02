@@ -15,6 +15,7 @@ cd "$(dirname "$0")/.." || exit 1
 PY="python"; command -v python >/dev/null 2>&1 || PY="python3"
 
 CAPTURES="${CAPTURES:-captures}"
+DELAY="${DELAY:-8}"     # secondes entre chaque onglet ; DELAY=15 pour plus sûr
 mkdir -p "$CAPTURES"
 
 # Enseignes à ouvrir (une fenêtre chacune, SANS pause entre elles). Les trois
@@ -33,7 +34,7 @@ first=1
 for store in "${STORES[@]}"; do
   if [ "$first" = 1 ]; then win=""; first=0; else win="--same-window"; fi
   echo "--- $store : ouverture des recherches ---"
-  "$PY" -m src.cli open-tabs --store "$store" --bulk --delay 6 $win
+  "$PY" -m src.cli open-tabs --store "$store" --bulk --delay "$DELAY" $win
 done
 
 echo

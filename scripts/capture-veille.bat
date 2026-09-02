@@ -10,6 +10,7 @@ REM   set CAPTURES=%USERPROFILE%\Downloads   avant de lancer.
 setlocal enabledelayedexpansion
 cd /d "%~dp0.."
 if "%CAPTURES%"=="" set CAPTURES=captures
+if "%DELAY%"=="" set DELAY=8
 if not exist "%CAPTURES%" mkdir "%CAPTURES%"
 
 REM Vider les pages de la semaine precedente (sinon d'anciens prix se melangent).
@@ -28,7 +29,7 @@ REM Un onglet toutes les 6 s, le temps que SingleFile enregistre completement.
 set WIN=
 for %%S in (leclerc_pleumeleuc intermarche_montauban hyperu_yffiniac lidl_langueux aldi_tregueux) do (
   echo --- %%S : ouverture des recherches ---
-  python -m src.cli open-tabs --store %%S --bulk --delay 6 !WIN!
+  python -m src.cli open-tabs --store %%S --bulk --delay !DELAY! !WIN!
   set WIN=--same-window
 )
 
