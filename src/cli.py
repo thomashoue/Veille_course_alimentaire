@@ -221,6 +221,44 @@ def _extract_json_array(text: str) -> str:
     return text[start : end + 1]
 
 
+def _find_chromium() -> str | None:
+    """Localise un navigateur Chromium (Chrome/Edge/Brave) pour --new-window.
+
+    Chrome ignore souvent la demande de nouvelle fenêtre passée par la voie
+    générique du module webbrowser ; en l'appelant directement avec
+    --new-window, une fenêtre neuve est garantie, séparée des onglets ouverts.
+    """
+    import os
+    import shutil
+
+    for name in ("google-chrome", "chromium", "chromium-browser", "brave-browser", "microsoft-edge"):
+        found = shutil.which(name)
+        if found:
+            return found
+    if sys.platform == "win32":
+        candidates = []
+        for var in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"):
+            base = os.environ.get(var, "")
+            if base:
+                candidates += [
+                    os.path.join(base, "Google", "Chrome", "Application", "chrome.exe"),
+                    os.path.join(base, "Microsoft", "Edge", "Application", "msedge.exe"),
+                    os.path.join(base, "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+                ]
+        for path in candidates:
+            if os.path.exists(path):
+                return path
+    elif sys.platform == "darwin":
+        for path in (
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        ):
+            if os.path.exists(path):
+                return path
+    return None
+
+
 def cmd_open_tabs(args: argparse.Namespace) -> int:
     """Ouvre les recherches de drive comme onglets dans le navigateur PAR DÉFAUT.
 
@@ -260,7 +298,10 @@ def cmd_open_tabs(args: argparse.Namespace) -> int:
     if args.script:
         path = Path(args.script)
         if sys.platform == "win32":
-            lines = ["@echo off", f"rem Recherches drive — {store.name}"]
+            lines = ["@echo off", f"rem Recherches drive — {store.name}",
+                     "rem Nouvelle fenêtre du navigateur par défaut, puis onglets"]
+            # start "" <url> ouvre dans le navigateur par défaut ; on force une
+            # fenêtre neuve via le protocole en ouvrant le premier seul.
             lines += [f'start "" "{url}"' for _, url in urls]
         else:
             opener = "open" if sys.platform == "darwin" else "xdg-open"
@@ -270,12 +311,28 @@ def cmd_open_tabs(args: argparse.Namespace) -> int:
         print(f"{len(urls)} recherche(s) écrites dans {path} — lancez-le quand vous voulez.")
         return 0
 
-    print(f"Ouverture de {len(urls)} recherche(s) dans votre navigateur par défaut "
-          f"({store.name})…")
-    print("Aucun cookie n'est copié : c'est votre navigateur, déjà connecté.\n")
-    for label, url in urls:
+    same_window = args.same_window
+    only_urls = [url for _, url in urls]
+    for label, _ in urls:
         print(f"  · {label}")
-        webbrowser.open_new_tab(url)
+
+    chromium = None if same_window else _find_chromium()
+    if chromium:
+        # Une seule fenêtre neuve avec tous les onglets, séparée de l'existant.
+        import subprocess
+
+        print(f"\nNouvelle fenêtre ({store.name}) — {len(only_urls)} onglet(s).")
+        subprocess.Popen([chromium, "--new-window", *only_urls])
+    elif same_window:
+        print(f"\nOuverture dans les onglets courants ({store.name})…")
+        for url in only_urls:
+            webbrowser.open_new_tab(url)
+    else:
+        # Pas de Chromium trouvé : au mieux, new=1 pour le premier.
+        print(f"\nNouvelle fenêtre ({store.name}) via le navigateur par défaut…")
+        for i, url in enumerate(only_urls):
+            webbrowser.open(url, new=1 if i == 0 else 2, autoraise=(i == 0))
+    print("Aucun cookie n'est copié : c'est votre navigateur, déjà connecté.")
     print("\nEnregistrez les pages (Ctrl+S, ou SingleFile « tous les onglets »), puis :")
     print(f"  python -m src.cli parse-page --store {store.id} --dir <dossier>")
     return 0
@@ -755,6 +812,11 @@ def build_parser() -> argparse.ArgumentParser:
     open_tabs.add_argument("--items", nargs="*", help="articles précis (défaut : tout le drive)")
     open_tabs.add_argument("--bulk", action="store_true", help="seulement les postes à stocker")
     open_tabs.add_argument("--script", help="écrire un .bat/.sh rejouable au lieu d'ouvrir")
+    open_tabs.add_argument(
+        "--same-window",
+        action="store_true",
+        help="ajouter aux onglets courants au lieu d'ouvrir une nouvelle fenêtre",
+    )
     open_tabs.set_defaults(func=cmd_open_tabs)
 
     review = sub.add_parser(

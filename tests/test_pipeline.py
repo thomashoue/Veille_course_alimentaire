@@ -387,3 +387,35 @@ class TestReview:
         out = capsys.readouterr().out
         assert "Claude dans Chrome" in out
         assert "https://x/produit/steak" in out
+
+
+class TestOpenTabsFenetre:
+    def test_new_window_est_le_defaut(self, config, tmp_path, monkeypatch, capsys):
+        import sys as sysmod
+
+        import src.cli as cli
+
+        # Pas de navigateur trouvé : on n'ouvre rien, mais le message doit
+        # annoncer une NOUVELLE fenêtre, pas des onglets.
+        monkeypatch.setattr(cli, "_find_chromium", lambda: None)
+        monkeypatch.setattr(sysmod, "platform", "linux")
+        opened = []
+        import webbrowser
+
+        monkeypatch.setattr(webbrowser, "open", lambda url, new=0, autoraise=True: opened.append((url, new)))
+        cli.main(["open-tabs", "--store", "leclerc_pleumeleuc", "--items", "lait_demi_ecreme"])
+        out = capsys.readouterr().out
+        assert "ouvelle fenêtre" in out
+        assert opened and opened[0][1] == 1        # premier lien : new window
+
+    def test_same_window_ajoute_aux_onglets(self, config, tmp_path, monkeypatch, capsys):
+        import src.cli as cli
+
+        opened = []
+        import webbrowser
+
+        monkeypatch.setattr(webbrowser, "open_new_tab", lambda url: opened.append(url))
+        cli.main(["open-tabs", "--store", "leclerc_pleumeleuc",
+                  "--items", "lait_demi_ecreme", "--same-window"])
+        assert "onglets courants" in capsys.readouterr().out
+        assert opened
