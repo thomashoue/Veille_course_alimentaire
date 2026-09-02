@@ -48,3 +48,40 @@ class TestShoppingList:
         menu = shopping_list(config, week)
         # Les fruits/légumes et le poisson frais ne vont pas dans « à acheter drive ».
         assert all(l.category not in ("fl", "poisson") for l in menu.to_buy)
+
+
+class TestStock:
+    """Inventaire : besoin − stock, départ à zéro."""
+
+    def test_stock_couvre_le_besoin(self, config, tmp_path):
+        from src.inventory import Inventory
+        from src.menu import plan_week, shopping_list
+
+        week = plan_week(config, seed=1, avoid_recent=False)
+        base = shopping_list(config, week)
+        # On met en stock de quoi couvrir entièrement le premier article.
+        item = base.to_buy[0]
+        stock = {(item.basket_item, item.unit): item.need}
+        with_stock = shopping_list(config, week, stock=stock)
+        assert all(l.basket_item != item.basket_item for l in with_stock.to_buy)
+        assert any(l.basket_item == item.basket_item for l in with_stock.covered)
+
+    def test_stock_partiel_reduit_la_quantite(self, config):
+        from src.menu import plan_week, shopping_list
+
+        week = plan_week(config, seed=1, avoid_recent=False)
+        base = shopping_list(config, week)
+        item = base.to_buy[0]
+        stock = {(item.basket_item, item.unit): item.need / 2}
+        reduced = next(l for l in shopping_list(config, week, stock=stock).to_buy
+                       if l.basket_item == item.basket_item)
+        assert reduced.qty == pytest.approx(item.need / 2, abs=0.02)
+
+    def test_acheter_puis_consommer(self, config, tmp_path):
+        from src.inventory import Inventory, consume_menu
+
+        inv = Inventory(tmp_path / "inv.json")
+        inv.add("riz", 2, "kg")
+        consume_menu(inv, config, [config.recipe("dahl_lentilles_corail")])
+        # Le dahl consomme 0,25 kg de riz : il en reste 1,75.
+        assert inv.current()[("riz", "kg")] == pytest.approx(1.75)

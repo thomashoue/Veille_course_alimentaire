@@ -608,6 +608,45 @@ def cmd_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_stock(args: argparse.Namespace) -> int:
+    """Affiche ou met à jour l'inventaire du garde-manger."""
+    from .inventory import Inventory
+
+    config = get_config(args.config)
+    inv = Inventory()
+
+    def _apply(specs, sign):
+        for spec in specs:
+            parts = spec.split(":")
+            item = parts[0]
+            qty = float(parts[1]) if len(parts) > 1 else 0.0
+            unit = parts[2] if len(parts) > 2 else (
+                config.items[item].stock_unit or config.items[item].unit
+                if item in config.items else "unite"
+            )
+            if sign > 0:
+                inv.add(item, qty, unit)
+            else:
+                inv.consume(item, qty, unit)
+            print(f"  {'+' if sign > 0 else '−'} {item} {qty:g} {unit}")
+
+    if args.reset:
+        inv.reset(); inv.save(); print("Stock remis à zéro."); return 0
+    if args.add:
+        _apply(args.add, +1); inv.save()
+    if args.remove:
+        _apply(args.remove, -1); inv.save()
+
+    print("\n=== Stock courant ===")
+    current = inv.current()
+    if not current:
+        print("  (vide — hypothèse de départ : stock à zéro)")
+    for (item, unit), qty in sorted(current.items()):
+        label = config.items[item].label if item in config.items else item
+        print(f"  {label:<24} {qty:g} {unit}")
+    return 0
+
+
 def cmd_menu(args: argparse.Namespace) -> int:
     """Menu de la semaine + liste de courses par besoin."""
     from .menu import plan_week, record_week, shopping_list
@@ -624,7 +663,11 @@ def cmd_menu(args: argparse.Namespace) -> int:
         seed=args.seed,
         avoid_recent=not args.repeat_ok,
     )
-    menu = shopping_list(config, week, servings=args.servings)
+    stock = None
+    if not args.ignore_stock:
+        from .inventory import Inventory
+        stock = Inventory().current()
+    menu = shopping_list(config, week, servings=args.servings, stock=stock)
 
     print(f"=== Menu de la semaine ({args.servings or config.servings_base} parts) ===\n")
     for jour, recipe in menu.week:
@@ -647,9 +690,21 @@ def cmd_menu(args: argparse.Namespace) -> int:
         for line in menu.fresh:
             print(f"  {line.label} — {line.qty:g} {line.unit}")
 
-    if args.save:
+    if menu.covered:
+        print("\n=== Déjà en stock (rien à acheter) ===")
+        for line in menu.covered:
+            print(f"  {line.label} — besoin {line.need:g} {line.unit}, "
+                  f"en stock {line.in_stock:g}")
+
+    if args.cook:
+        from .inventory import Inventory, consume_menu
+        inv = Inventory()
+        consume_menu(inv, config, [r for _, r in menu.week], servings=args.servings)
+        inv.save()
+        print("\nRepas décomptés du stock (--cook).")
+    if args.save or args.cook:
         record_week([r.id for _, r in menu.week])
-        print("\nSemaine enregistrée (évitera de refaire ces plats la prochaine fois).")
+        print("Semaine enregistrée (évitera de refaire ces plats la prochaine fois).")
     print("\nRégénérer une autre semaine : ajoutez --seed <n> ou relancez.")
     return 0
 
@@ -980,7 +1035,19 @@ def build_parser() -> argparse.ArgumentParser:
                       help="autoriser les recettes des dernières semaines")
     menu.add_argument("--save", action="store_true",
                       help="mémoriser la semaine (rotation anti-répétition)")
+    menu.add_argument("--cook", action="store_true",
+                      help="décompter ces repas du stock (les ingrédients sont consommés)")
+    menu.add_argument("--ignore-stock", action="store_true",
+                      help="ne pas déduire le garde-manger (besoin brut)")
     menu.set_defaults(func=cmd_menu)
+
+    stock = sub.add_parser("stock", help="inventaire du garde-manger (acheté − consommé)")
+    stock.add_argument("--add", nargs="+", metavar="ITEM:QTE[:UNITE]",
+                       help="ajouter au stock, ex : riz:2:kg conserve_poisson:6:boite")
+    stock.add_argument("--remove", nargs="+", metavar="ITEM:QTE[:UNITE]",
+                       help="retirer du stock (consommation manuelle)")
+    stock.add_argument("--reset", action="store_true", help="remettre le stock à zéro")
+    stock.set_defaults(func=cmd_stock)
 
     paste = sub.add_parser(
         "paste",

@@ -58,7 +58,8 @@ class BasketItem:
     id: str
     label: str
     category: str
-    unit: str                                   # unité de comparaison
+    unit: str                                   # unité de comparaison (prix)
+    stock_unit: str = ""                        # unité d'inventaire (défaut : unit)
     bulk_worthy: bool = False
     keywords: list[str] = field(default_factory=list)
     # Si l'un de ces mots apparaît dans un libellé, le produit n'est PAS cet

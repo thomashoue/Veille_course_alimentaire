@@ -24,11 +24,13 @@ JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"
 @dataclass
 class Line:
     label: str
-    qty: float
+    qty: float                       # à acheter (besoin − stock)
     unit: str
     basket_item: str | None = None
     category: str = ""
     from_recipes: list[str] = field(default_factory=list)
+    need: float = 0.0                # besoin total avant déduction du stock
+    in_stock: float = 0.0            # quantité déjà en stock
 
 
 @dataclass
@@ -37,6 +39,7 @@ class Menu:
     to_buy: list[Line]                    # articles reliés au panier (veille prix)
     fresh: list[Line]                     # frais : marché / Grand Frais
     pantry: list[Line]                    # épicerie hors panier suivi
+    covered: list[Line] = field(default_factory=list)  # besoin couvert par le stock
 
     def all_lines(self) -> list[Line]:
         return self.to_buy + self.fresh + self.pantry
@@ -135,7 +138,12 @@ def plan_week(
 
 
 # --------------------------------------------------------------------------- #
-def shopping_list(config: Config, recipes: list[Recipe], servings: int | None = None) -> Menu:
+def shopping_list(
+    config: Config,
+    recipes: list[Recipe],
+    servings: int | None = None,
+    stock: dict[tuple[str, str], float] | None = None,
+) -> Menu:
     """Agrège les ingrédients des recettes en une liste de courses.
 
     Quantités mises à l'échelle des convives, puis réparties en trois listes :
@@ -160,20 +168,33 @@ def shopping_list(config: Config, recipes: list[Recipe], servings: int | None = 
                 )
                 agg[key] = line
             line.qty += ing.qty * scale
+            line.need += ing.qty * scale
             line.from_recipes.append(recipe.id)
 
-    to_buy, fresh, pantry = [], [], []
+    stock = stock or {}
+    to_buy, fresh, pantry, covered = [], [], [], []
     for line in agg.values():
-        line.qty = round(line.qty, 2)
+        line.need = round(line.need, 2)
+        # Déduire le stock (besoin − stock) pour les articles suivis.
+        if line.basket_item:
+            have = stock.get((line.basket_item, line.unit), 0.0)
+            line.in_stock = round(have, 2)
+            line.qty = round(max(0.0, line.need - have), 2)
+        else:
+            line.qty = line.need
         if line.category in ("fl", "poisson"):
-            fresh.append(line)
+            fresh.append(line)          # frais : non stocké, on achète le besoin
         elif line.basket_item and line.basket_item in config.items:
-            to_buy.append(line)
+            if line.qty <= 0:
+                covered.append(line)    # entièrement en stock
+            else:
+                to_buy.append(line)
         else:
             pantry.append(line)
 
     to_buy.sort(key=lambda l: config.items[l.basket_item].category if l.basket_item in config.items else "")
     fresh.sort(key=lambda l: l.label)
     pantry.sort(key=lambda l: l.label)
+    covered.sort(key=lambda l: l.label)
     week = [(JOURS[i], r) for i, r in enumerate(recipes)]
-    return Menu(week=week, to_buy=to_buy, fresh=fresh, pantry=pantry)
+    return Menu(week=week, to_buy=to_buy, fresh=fresh, pantry=pantry, covered=covered)

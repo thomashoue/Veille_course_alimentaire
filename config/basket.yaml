@@ -75,6 +75,7 @@ items:
     keywords: [sardines, thon, maquereaux]
     qty_per_run: 0.6       # ~6 boîtes de 93 g net
     qty_stock: 2.5
+    stock_unit: boite      # l'inventaire compte les boîtes (le kg sert au prix)
     weight_basis_required: true
 
   - id: cafe
