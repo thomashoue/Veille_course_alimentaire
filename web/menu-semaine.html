@@ -291,9 +291,11 @@ document.getElementById('validate').onclick=async ()=>{
   try{
     const r = await fetch('/api/validate',{method:'POST',headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ids: state.week, servings: state.servings})});
-    if(r.ok){ saved=true; }
-    else { const j = await r.json().catch(()=>({})); err = j.error || ('HTTP '+r.status); }
-  }catch(e){ err='offline'; }
+    let j=null; try{ j = await r.json(); }catch(_){ j=null; }
+    if(j && j.ok===true){ saved=true; }               // servi par l'outil, enregistré
+    else if(j && j.ok===false){ err = j.error || ('HTTP '+r.status); }  // vraie erreur de validation
+    else { err='offline'; }   // 404 / page statique / réponse non-API → pas servi ici
+  }catch(e){ err='offline'; } // erreur réseau → pas servi ici
   btn.disabled=false; btn.textContent="Valider la semaine";
   if(saved){
     out.innerHTML = `
