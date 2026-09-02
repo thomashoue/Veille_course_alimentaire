@@ -249,6 +249,60 @@ def products_from_jsonld(html: str) -> list[DriveProduct]:
     return products
 
 
+_NAME_KEYS = ("libelle", "label", "name", "title", "productname", "nom", "denomination")
+_PRICE_KEYS = ("prix", "price", "prixunitaire", "grossamount", "sellingprice",
+               "currentprice", "pricevalue", "amount")
+
+
+def _coerce_price(value) -> float | None:
+    """Lit un prix quel que soit son emballage : nombre, texte, ou objet
+    ({value|amount|formattedValue}, ou centAmount entier en centimes)."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        import re as _re
+        m = _re.search(r"\d+[.,]\d{2}", value)
+        return float(m.group().replace(",", ".")) if m else None
+    if isinstance(value, dict):
+        low = {k.lower(): v for k, v in value.items()}
+        if "centamount" in low:
+            try:
+                return int(low["centamount"]) / 100.0
+            except (ValueError, TypeError):
+                pass
+        for key in ("formattedvalue", "value", "amount", "grossamount"):
+            if key in low:
+                p = _coerce_price(low[key])
+                if p is not None:
+                    return p
+    return None
+
+
+def _json_blobs(html: str) -> list:
+    """JSON embarqués : <script type=application/json> (Next.js __NEXT_DATA__,
+    Nuxt…) ET assignations window.__X__ = {…}."""
+    blobs: list = []
+    for m in re.finditer(
+        r'<script[^>]*type=["\']application/json["\'][^>]*>(.*?)</script>',
+        html, re.S | re.I,
+    ):
+        try:
+            blobs.append(json.loads(m.group(1).strip()))
+        except (json.JSONDecodeError, ValueError):
+            pass
+    for m in re.finditer(
+        r"(?:window\.__[A-Z_]+__|__NUXT__|dataLayer)\s*=\s*(\{.*?\})\s*[;<]",
+        html, re.S,
+    ):
+        try:
+            blobs.append(json.loads(m.group(1)))
+        except (json.JSONDecodeError, ValueError):
+            pass
+    return blobs
+
+
 def products_from_embedded_json(html: str) -> list[DriveProduct]:
     """Beaucoup de drives déposent leur catalogue dans un JSON inline.
 
@@ -256,15 +310,7 @@ def products_from_embedded_json(html: str) -> list[DriveProduct]:
     la plus fiable après le JSON-LD.
     """
     products: list[DriveProduct] = []
-    for match in re.finditer(
-        r"(?:window\.__[A-Z_]+__|__NEXT_DATA__|__NUXT__|dataLayer)\s*=\s*(\{.*?\})\s*[;<]",
-        html,
-        re.S,
-    ):
-        try:
-            data = json.loads(match.group(1))
-        except (json.JSONDecodeError, ValueError):
-            continue
+    for data in _json_blobs(html):
         stack = [data]
         while stack:
             node = stack.pop()
@@ -274,22 +320,25 @@ def products_from_embedded_json(html: str) -> list[DriveProduct]:
             if not isinstance(node, dict):
                 continue
             stack.extend(v for v in node.values() if isinstance(v, (dict, list)))
-            label = node.get("libelle") or node.get("label") or node.get("name")
-            price = node.get("prix") or node.get("price") or node.get("prixUnitaire")
-            if not label or price is None or not isinstance(label, str):
-                continue
-            try:
-                price = float(str(price).replace(",", ".").replace(" ", ""))
-            except ValueError:
-                continue
-            if price <= 0 or price > 500:
+            low = {k.lower(): v for k, v in node.items()}
+            label = next(
+                (low[k] for k in _NAME_KEYS if isinstance(low.get(k), str) and low[k].strip()),
+                None,
+            )
+            price = None
+            for k in _PRICE_KEYS:
+                if k in low:
+                    price = _coerce_price(low[k])
+                    if price is not None:
+                        break
+            if not label or price is None or price <= 0 or price > 500:
                 continue
             products.append(
                 DriveProduct(
-                    ref=str(node.get("ref") or node.get("id") or label)[:80],
+                    ref=str(node.get("id") or node.get("sku") or node.get("ref") or label)[:80],
                     label=label.strip(),
                     price_eur=price,
-                    available=bool(node.get("disponible", node.get("available", True))),
+                    available=bool(low.get("disponible", low.get("available", True))),
                 )
             )
     return products

@@ -442,3 +442,39 @@ class TestDetectStore:
         from src.drive.offline import detect_store
 
         assert detect_store("<html><body>rien</body></html>", config) is None
+
+
+class TestGabaritAldiNext:
+    """Aldi est un site Next.js : catalogue en JSON dans __NEXT_DATA__.
+
+    C'est la donnée brute du site, pas des sélecteurs fragiles. Le prix vient
+    en centAmount (centimes), en formattedValue, ou en nombre — les trois lus.
+    """
+
+    @pytest.fixture
+    def aldi_html(self):
+        return (FIXTURES / "aldi_next_data.html").read_text(encoding="utf-8")
+
+    def test_lecture_par_json_embarque(self, aldi_html):
+        products, method = extract_products(aldi_html)
+        assert method == "json embarqué"
+        labels = {p.label for p in products}
+        assert "Sardines à l'huile d'olive 135g" in labels
+
+    def test_centimes_et_formats_varies(self, aldi_html):
+        products, _ = extract_products(aldi_html)
+        by_label = {p.label: p.price_eur for p in products}
+        assert by_label["Sardines à l'huile d'olive 135g"] == pytest.approx(1.89)  # centAmount
+        assert by_label["Café moulu arabica 250g"] == pytest.approx(1.79)          # formattedValue
+        assert by_label["Lessive Tandil 60 lavages"] == pytest.approx(6.49)        # nombre
+
+    def test_entree_sans_prix_ignoree(self, aldi_html):
+        products, _ = extract_products(aldi_html)
+        assert not any("Bannière" in p.label for p in products)
+
+    def test_rattachement_au_panier(self, aldi_html, config):
+        store = config.store("aldi_tregueux")
+        observations, report = observations_from_page(aldi_html, store, config)
+        items = {o.basket_item_id for o in observations}
+        assert "conserve_poisson" in items and "cafe" in items and "lessive" in items
+        assert report["method"] == "json embarqué"
