@@ -195,6 +195,14 @@ def _clean_label(text: str) -> str:
     cut = _LABEL_CUTS.search(text)
     if cut and cut.start() >= 5:
         text = text[: cut.start()]
+    # Sous-titre de conditionnement Intermarché (« … la boîte de 90g net
+    # égoutté • », « le sachet de 1kg • ») : coupe au descripteur.
+    desc = re.search(
+        r"(?i)\b(la bo[iî]te|le sachet|le pack|le lot|la barquette|le paquet|les? \d)\b",
+        text,
+    )
+    if desc and desc.start() >= 5:
+        text = text[: desc.start()]
     # D'abord les prix unitaires (« 0,95 €/l », « 3,07 € le kg ») : les retirer
     # en entier évite de laisser traîner un « /l » orphelin dans le libellé.
     text = re.sub(r"\d+[.,]\d+\s*€\s*(?:/|le|par|au)\s*[a-zéè]{1,10}\b", " ", text, flags=re.I)
@@ -325,11 +333,17 @@ def products_from_blocks(html: str) -> list[DriveProduct]:
                          or tile["attrs"].get("data-itemid")
                          or tile["attrs"].get("id") or label)[:80],
                     label=label[:140],
+                    # Conditionnement lu sur la vignette ENTIÈRE : le grammage
+                    # vit dans le sous-titre qu'on retire du libellé.
+                    pack=parse_pack(text),
                     price_eur=price,
                     regular_price=regular,
                     available="indisponible" not in strip_accents(text).lower(),
                     unit_price_hint=unit_hint[0] if unit_hint else None,
                     unit_hint_unit=unit_hint[1] if unit_hint else None,
+                    # Base de poids et mécanique lues sur le texte ENTIER de la
+                    # vignette : le nettoyage du libellé les efface.
+                    weight_basis=detect_weight_basis(text),
                 )
             )
         if found:
@@ -407,8 +421,8 @@ def observations_from_page(
                 price_eur=product.price_eur,
                 category=item.category,
                 # Intermarché affiche en net égoutté, Leclerc en brut (P5) :
-                # quand le libellé le dit, on le lit — sinon P5 signalera.
-                weight_basis=detect_weight_basis(product.label),
+                # lu sur la vignette complète (le nettoyage du libellé l'efface).
+                weight_basis=product.weight_basis or detect_weight_basis(product.label),
                 mechanic=detect_mechanic(product.label),
                 pack_size=pack.size if pack else None,
                 pack_unit=pack.unit if pack else None,

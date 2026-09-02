@@ -34,6 +34,8 @@ class DriveProduct:
     unit_hint_unit: str | None = None
     # Prix barré affiché à côté (« au lieu de ») : alimente regular_price.
     regular_price: float | None = None
+    # Base de poids lue sur la vignette complète, avant nettoyage du libellé.
+    weight_basis: str | None = None
     raw: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
