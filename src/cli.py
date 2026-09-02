@@ -656,13 +656,29 @@ def cmd_menu(args: argparse.Namespace) -> int:
         print("Aucune recette : config/recipes.yaml manquant.")
         return 1
 
-    week = plan_week(
+    if args.list:
+        print("=== Recettes disponibles (id — nom) ===")
+        for r in config.recipes.values():
+            tags = f"  [{', '.join(r.tags)}]" if r.tags else ""
+            print(f"  {r.id:<28} {r.name}{tags}")
+        return 0
+
+    if args.pick:
+        ids = [i.strip() for i in ",".join(args.pick).replace(" ", ",").split(",") if i.strip()]
+        inconnus = [i for i in ids if i not in config.recipes]
+        if inconnus:
+            print(f"Recette(s) inconnue(s) : {', '.join(inconnus)}")
+            print("Liste : python -m src.cli menu --list")
+            return 2
+        week = [config.recipe(i) for i in ids]
+    else:
+        week = plan_week(
         config,
         n=args.days,
         fish_max=args.fish_max,
         seed=args.seed,
         avoid_recent=not args.repeat_ok,
-    )
+        )
     stock = None
     if not args.ignore_stock:
         from .inventory import Inventory
@@ -1033,6 +1049,9 @@ def build_parser() -> argparse.ArgumentParser:
     menu.add_argument("--seed", type=int, help="graine pour reproduire un tirage")
     menu.add_argument("--repeat-ok", action="store_true",
                       help="autoriser les recettes des dernières semaines")
+    menu.add_argument("--pick", nargs="+", metavar="ID",
+                      help="verrouiller un menu décidé (ids séparés par des virgules)")
+    menu.add_argument("--list", action="store_true", help="lister les recettes disponibles")
     menu.add_argument("--save", action="store_true",
                       help="mémoriser la semaine (rotation anti-répétition)")
     menu.add_argument("--cook", action="store_true",
