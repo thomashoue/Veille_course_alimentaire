@@ -218,6 +218,8 @@ _MECHANIC_PATTERNS = [
     (re.compile(r"(2\s*(?:e|eme|ème|nd))[^.]{0,30}-?\s*(\d{2})\s*%", re.I), "second_rev"),
     (re.compile(r"2\s*(?:e|eme|ème)\s*(?:a|à)\s*moiti[eé]\s*prix", re.I), "second_50"),
     (re.compile(r"\b3\s*(?:pour|=)\s*2\b", re.I), "3_pour_2"),
+    (re.compile(r"\b2\s*\+\s*1\s*(?:gratuit|offert)", re.I), "3_pour_2"),
+    (re.compile(r"\b1\s*\+\s*1\s*(?:gratuit|offert)", re.I), "second_-100"),
     (re.compile(r"\blot\s*de\s*\d+", re.I), "lot"),
 ]
 

@@ -86,6 +86,13 @@ _LABEL_CUTS = re.compile(
     r"(?i)\b(ajouter au panier|ajouter|voir le produit|voir le detail|en stock)\b"
 )
 
+# Bannières marketing collées au libellé (Courses U : « ICI PRIX MINI »,
+# « PRIX BAS »…). Retirées avant le repli du libellé dupliqué.
+_PROMO_BANNERS = re.compile(
+    r"(?i)\b(ici prix mini|prix bas|prix mini|prix choc|bon plan|prix ronds?"
+    r"|nouveaut[eé]s?|nouveau|la promo|promo|offre|top affaire)\b"
+)
+
 # Balises qui ne se ferment jamais : elles ne doivent pas encombrer la pile.
 _VOID_TAGS = {
     "area", "base", "br", "col", "embed", "hr", "img", "input",
@@ -211,14 +218,19 @@ def _clean_label(text: str) -> str:
     text = re.sub(r"(?i)\b(le kg|le l|par kg|prix au kilo|sponsoris\w*)\b", " ", text)
     text = re.sub(r"(?<= )[-+](?= )|\s0\s\+", " ", text)
     # On ne rogne pas le « + » collé : « Eco+ » est une marque, pas un séparateur.
+    # Bannières marketing (ICI PRIX MINI, PRIX BAS…) : elles décalaient le repli
+    # du doublon et polluaient le libellé.
+    text = _PROMO_BANNERS.sub(" ", text)
     text = re.sub(r"\s+", " ", text).strip(" -·|")
     # Chez U, l'image et le lien portent le même texte : « Nom sac 5L Nom sac
-    # 5L ». On replie le doublon exact.
+    # 5L ». On replie le doublon, même s'il reste un mot parasite au milieu.
     words = text.split()
-    half = len(words) // 2
-    if half >= 2 and words[:half] == words[half:]:
-        text = " ".join(words[:half])
-    return text
+    n = len(words)
+    for k in range(n // 2, 1, -1):
+        if words[:k] == words[k : 2 * k]:
+            text = " ".join(words[:k] + words[2 * k :])
+            break
+    return text.strip(" -·|")
 
 
 def products_from_jsonld(html: str) -> list[DriveProduct]:
@@ -710,28 +722,41 @@ def _cross_check(product: DriveProduct, pack) -> tuple[str | None, str | None]:
     if displayed <= 0:
         return None, None
 
-    ecart = abs(computed - displayed) / displayed
-    if ecart < 0.05:
+    ratio = computed / displayed
+    if 0.85 <= ratio <= 1.05:
         return None, None
-    if ecart <= 0.25:
+
+    # Le seul cas qui DISQUALIFIE : notre calcul est très en dessous du prix
+    # unitaire affiché (ratio << 1). Signature du bug litière : le prix lu était
+    # en fait le prix AU LITRE, divisé par un gros grammage → €/L minuscule.
+    if ratio < 0.5:
+        reason = (
+            f"prix incohérent : {product.price_eur:.2f} € pour {pack.describe()} "
+            f"donnerait {computed:.3f} €/{product.unit_hint_unit}, or l'enseigne "
+            f"affiche {product.unit_price_hint:g} €/{product.unit_hint_unit}"
+        )
+        if abs(product.price_eur - product.unit_price_hint) < 0.01:
+            probable = displayed * pack.total_base
+            reason += (
+                f" — le prix lu est probablement le prix unitaire ; "
+                f"prix pack vraisemblable : {probable:.2f} €"
+            )
+        return None, reason
+
+    # Notre calcul est AU-DESSUS du €/kg affiché (ratio > 1) : cas classique du
+    # net égoutté (l'enseigne affiche au poids brut, nous au net, plus petit et
+    # plus cher au kilo). Légitime — on note, on ne disqualifie pas.
+    if computed > displayed:
         return (
-            f"⚠ écart de {ecart:.0%} entre notre calcul ({computed:.3f}) et le "
-            f"prix unitaire affiché ({displayed:.3f}) — format à vérifier",
+            f"€/kg calculé sur le net ({computed:.2f}), l'enseigne affiche "
+            f"{displayed:.2f} au brut",
             None,
         )
-
-    reason = (
-        f"prix incohérent : {product.price_eur:.2f} € pour {pack.describe()} "
-        f"donnerait {computed:.3f} €/{product.unit_hint_unit}, or l'enseigne "
-        f"affiche {product.unit_price_hint:g} €/{product.unit_hint_unit}"
+    return (
+        f"⚠ écart avec le prix unitaire affiché ({computed:.3f} vs "
+        f"{displayed:.3f}) — format à vérifier",
+        None,
     )
-    if abs(product.price_eur - product.unit_price_hint) < 0.01:
-        probable = displayed * pack.total_base
-        reason += (
-            f" — le prix lu est probablement le prix unitaire ; "
-            f"prix pack vraisemblable : {probable:.2f} €"
-        )
-    return None, reason
 
 
 def _redact_sample(text: str) -> str:

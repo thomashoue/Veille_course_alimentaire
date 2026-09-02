@@ -478,3 +478,39 @@ class TestGabaritAldiNext:
         items = {o.basket_item_id for o in observations}
         assert "conserve_poisson" in items and "cafe" in items and "lessive" in items
         assert report["method"] == "json embarqué"
+
+
+class TestCrossCheckBrutNet:
+    """Le contrôle croisé ne doit pas confondre net/brut avec une incohérence."""
+
+    def test_sardine_net_superieur_au_brut_non_disqualifiee(self):
+        from src.drive.base import DriveProduct
+        from src.drive.offline import _cross_check
+        from src.units import parse_pack
+
+        # 1,47 € les 70 g net -> 21 €/kg ; l'enseigne affiche 14,7 €/kg (brut).
+        p = DriveProduct(ref="s", label="Sardines 70g", price_eur=1.47,
+                         unit_price_hint=14.7, unit_hint_unit="kg")
+        note, suspect = _cross_check(p, parse_pack("Sardines 70 g"))
+        assert suspect is None            # PAS de quarantaine
+        assert "net" in (note or "")
+
+    def test_litiere_prix_au_litre_pris_pour_le_pack_toujours_disqualifiee(self):
+        from src.drive.base import DriveProduct
+        from src.drive.offline import _cross_check
+        from src.units import parse_pack
+
+        p = DriveProduct(ref="l", label="Litière 15L", price_eur=1.32,
+                         unit_price_hint=1.32, unit_hint_unit="l")
+        note, suspect = _cross_check(p, parse_pack("Litière 15 L"))
+        assert suspect is not None        # quarantaine maintenue
+        assert "19.80" in suspect or "19,80" in suspect
+
+    def test_libelle_u_debarrasse_de_la_banniere_et_du_doublon(self):
+        from src.drive.offline import _clean_label
+
+        got = _clean_label(
+            "ICI PRIX MINI Lait demi écrémé UHT LAIT D'ICI, 6x1l "
+            "Lait demi écrémé UHT LAIT D'ICI, 6x1l"
+        )
+        assert got == "Lait demi écrémé UHT LAIT D'ICI, 6x1l"
