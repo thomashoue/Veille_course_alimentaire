@@ -175,6 +175,20 @@ page non vide — un rapport vide qui ressemble à « pas de promo » est pire
 qu'une erreur. La voie recommandée reste le **XHR** (`parse_search_xhr` est déjà
 là et testé) dès que les endpoints auront été relevés une fois, session ouverte.
 
+### Le script tout-en-un
+
+Le plus simple, un vendredi : lancer le script de capture. Il ouvre les
+recherches enseigne par enseigne, marque une pause le temps que vous
+enregistriez les pages (Ctrl+S ou SingleFile), puis lit tout, lève les
+doutes et sort le comparatif.
+
+```
+scripts\capture-veille.bat      (Windows : double-clic, ou depuis cmd)
+bash scripts/capture-veille.sh   (Git Bash / WSL / Linux / macOS)
+```
+
+Le détail des étapes, si vous préférez les lancer une par une :
+
 ### La semaine type (vendredi, ~10 minutes)
 
 On ne vérifie pas les 26 articles du panier : les agrégateurs orientent, et
