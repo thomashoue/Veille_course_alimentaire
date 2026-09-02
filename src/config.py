@@ -14,7 +14,7 @@ from typing import Any
 
 import yaml
 
-from .models import BasketItem, Store
+from .models import BasketItem, Ingredient, Recipe, Store
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = Path(os.environ.get("VEILLE_CONFIG_DIR", ROOT / "config"))
@@ -37,6 +37,8 @@ class Config:
     params: dict[str, Any]
     sources: dict[str, Any]
     out_of_scope_stores: list[str] = field(default_factory=list)
+    recipes: dict[str, Recipe] = field(default_factory=dict)
+    servings_base: int = 4
 
     # -- magasins ----------------------------------------------------------- #
     def store(self, store_id: str) -> Store:
@@ -62,21 +64,30 @@ class Config:
     def item(self, item_id: str) -> BasketItem:
         return self.items[item_id]
 
-    def match_item(self, label: str) -> BasketItem | None:
+    def match_item(
+        self, label: str, *, include_out_of_scope: bool = False
+    ) -> BasketItem | None:
         """Rattache un libellé de drive à un article du panier, par mot-clé.
 
-        Le mot-clé le plus long qui matche gagne : « croquettes chat » doit
-        l'emporter sur « croquettes ».
-        """
-        from .units import strip_accents
+        Deux garde-fous appris sur données réelles Intermarché :
+          * frontières de mot — « riz » ne doit pas matcher « chorizo », ni
+            « oignon » le fromage « Soignon », ni « banane » un yaourt à boire ;
+          * les fruits/légumes (hors périmètre drive) ne sont pas cherchés ici,
+            sauf demande explicite.
 
-        haystack = strip_accents(label or "").lower()
+        Le mot-clé le plus long qui matche gagne (« croquettes chat » >
+        « croquettes »).
+        """
+        haystack = _normalize(label or "")
         best: tuple[int, BasketItem] | None = None
         for item in self.items.values():
+            if item.out_of_scope_drive and not include_out_of_scope:
+                continue
+            if any(_contains_word(haystack, excluded) for excluded in item.exclude_keywords):
+                continue
             for keyword in item.keywords:
-                needle = strip_accents(keyword).lower()
-                if needle and needle in haystack:
-                    score = len(needle)
+                if _contains_word(haystack, keyword):
+                    score = len(_normalize(keyword))
                     if best is None or score > best[0]:
                         best = (score, item)
         return best[1] if best else None
@@ -100,6 +111,32 @@ class Config:
     def param(self, name: str, default: Any = None) -> Any:
         return self.params.get(name, default)
 
+    def recipe(self, recipe_id: str) -> Recipe:
+        return self.recipes[recipe_id]
+
+
+# Rattachement par mot entier, insensible aux accents. Un mot-clé multi-mot
+# (« steak haché ») est cherché comme une expression, bornée aux deux bouts.
+import re as _re
+
+from .units import strip_accents as _strip
+
+
+def _normalize(text: str) -> str:
+    return _strip(text or "").lower()
+
+
+def _contains_word(haystack: str, keyword: str) -> bool:
+    needle = _normalize(keyword)
+    if not needle:
+        return False
+    # Pluriel français toléré (rongeur→rongeurs, oignon→oignons), mais la
+    # frontière tient : « riz » ne matche pas « chorizo », « oignon » pas
+    # « Soignon ».
+    return _re.search(
+        rf"(?<![a-z0-9]){_re.escape(needle)}(?:s|x)?(?![a-z0-9])", haystack
+    ) is not None
+
 
 def _store_from_dict(raw: dict[str, Any]) -> Store:
     known = {f for f in Store.__dataclass_fields__}
@@ -118,6 +155,8 @@ def load_config(config_dir: Path | str | None = None) -> Config:
     basket_raw = _load_yaml(directory / "basket.yaml")
     thresholds_raw = _load_yaml(directory / "thresholds.yaml")
     sources_raw = _load_yaml(directory / "sources.yaml")
+    recipes_path = directory / "recipes.yaml"
+    recipes_raw = _load_yaml(recipes_path) if recipes_path.exists() else {}
 
     stores = {s["id"]: _store_from_dict(s) for s in stores_raw.get("stores", [])}
     excluded = {b.lower() for b in stores_raw.get("excluded_banners", [])}
@@ -127,6 +166,16 @@ def load_config(config_dir: Path | str | None = None) -> Config:
 
     items = {i["id"]: _item_from_dict(i) for i in basket_raw.get("items", [])}
 
+    recipes = {}
+    for raw in recipes_raw.get("recipes", []):
+        ingredients = [Ingredient(**{k: v for k, v in ing.items()
+                                     if k in Ingredient.__dataclass_fields__})
+                       for ing in raw.get("ingredients", [])]
+        recipes[raw["id"]] = Recipe(
+            id=raw["id"], name=raw["name"], tags=raw.get("tags", []),
+            proteine=raw.get("proteine", ""), ingredients=ingredients,
+        )
+
     return Config(
         stores=stores,
         excluded_banners=excluded,
@@ -135,6 +184,8 @@ def load_config(config_dir: Path | str | None = None) -> Config:
         params=thresholds_raw.get("params", {}),
         sources=sources_raw,
         out_of_scope_stores=basket_raw.get("out_of_scope_stores", []),
+        recipes=recipes,
+        servings_base=int(recipes_raw.get("servings_base", 4)),
     )
 
 

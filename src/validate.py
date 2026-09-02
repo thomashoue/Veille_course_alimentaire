@@ -112,7 +112,14 @@ def check_hard_constraints(obs: PriceObservation, item: BasketItem) -> Verdict:
 # Règles P1…P7
 # --------------------------------------------------------------------------- #
 def p1_exact_double(obs: PriceObservation) -> Verdict:
-    """Ratio exactement 2,00 → lot ou « 2ᵉ à −50 % », jamais une remise de moitié."""
+    """Ratio exactement 2,00 → lot ou « 2ᵉ à −50 % », jamais une remise de moitié.
+
+    Règle C2, calibrée sur les AGRÉGATEURS. Sur une page de drive, le prix
+    barré à côté du prix réel est un affichage de l'enseigne : un ratio de
+    2,00 y est une vraie promo à −50 %, pas une donnée trafiquée.
+    """
+    if obs.source == "drive":
+        return OK()
     if not obs.regular_price or not obs.price_eur:
         return OK()
     ratio = obs.regular_price / obs.price_eur
@@ -124,7 +131,12 @@ def p1_exact_double(obs: PriceObservation) -> Verdict:
 
 
 def p2_absurd_ratio(obs: PriceObservation) -> Verdict:
-    """Ratio > 2,4 → donnée aberrante : le « promo » est en fait le prix normal."""
+    """Ratio > 2,4 → donnée aberrante : le « promo » est en fait le prix normal.
+
+    Comme P1 : règle d'agrégateur, sans objet sur une page de drive.
+    """
+    if obs.source == "drive":
+        return OK()
     if not obs.regular_price or not obs.price_eur:
         return OK()
     ratio = obs.regular_price / obs.price_eur
@@ -261,6 +273,13 @@ def _threshold_for_unit(thresholds: dict, unit: str) -> dict | None:
 # --------------------------------------------------------------------------- #
 # Filtres structurants
 # --------------------------------------------------------------------------- #
+def check_suspect(obs: PriceObservation) -> Verdict:
+    """Une incohérence relevée à la lecture disqualifie l'offre, pas la piste."""
+    if obs.suspect_reason:
+        return FLAG(obs.suspect_reason, "C-CHECK")
+    return OK()
+
+
 def check_excluded_store(obs: PriceObservation, config: Config) -> Verdict:
     """Carrefour / Auchan : exclusion dure, en entrée du pipeline (§2.1)."""
     if config.is_excluded(obs.store_id) or config.is_excluded((obs.banner or "").lower()):
@@ -310,6 +329,7 @@ def validate(
         p6_loyalty_window(obs, pickup_date),
         p7_small_format(obs, item, config),
         check_comparable_unit(obs, item, config),
+        check_suspect(obs),
         check_drive_verification(obs),
     ):
         verdict = verdict.merge(rule_verdict)
@@ -369,13 +389,24 @@ def saving_vs_threshold(
     reference = (thresholds or {}).get("good")
     if reference is None or price is None:
         return 0.0
-    return max(0.0, (float(reference) - price) * float(item.qty_per_run))
+    quantity = float(item.qty_per_run)
+    # Sous le seuil « bon » d'un poste à stocker, on n'achète pas la quantité
+    # d'une semaine : l'économie se mesure sur la quantité de stockage. C'est
+    # elle qui décide si un détour se justifie (P8).
+    if item.bulk_worthy and item.qty_stock and price <= float(reference):
+        quantity = max(quantity, float(item.qty_stock))
+    return max(0.0, (float(reference) - price) * quantity)
 
 
 def is_reportable(verdict: Verdict, obs: PriceObservation) -> bool:
     """Ce qui a le droit d'apparaître comme offre dans le compte rendu.
 
-    Deux conditions cumulatives : le verdict n'est pas un rejet, ET
-    l'observation est vérifiée en drive (invariant central du §3).
+    Le verdict n'est pas un rejet, l'observation est vérifiée en drive
+    (invariant central du §3), ET aucun doute ne subsiste : une contrainte
+    dure invérifiable (C-HARD) ou un prix incohérent (C-CHECK) envoient en
+    « à vérifier », jamais en liste de courses. Vécu : une litière au type
+    inconnu s'est retrouvée « record » dans le panier de Charlotte.
     """
-    return verdict.status is not Status.REJECT and obs.is_actionable
+    if verdict.status is Status.REJECT or not obs.is_actionable:
+        return False
+    return not any(rule in ("C-HARD", "C-CHECK") for rule in verdict.rules)

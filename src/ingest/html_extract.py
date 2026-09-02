@@ -141,10 +141,45 @@ def extract_jsonld(html: str) -> list[dict]:
 # --------------------------------------------------------------------------- #
 _PRICE_RE = re.compile(
     r"(?<![\d,.])(\d{1,4})[\s.,](\d{2})\s*€|"      # 2,51 €  /  2.51 €
-    r"(?<![\d,.])(\d{1,4})\s*€\s*(\d{2})\b|"       # 2 € 51
+    # « 5 € ,52 » — Leclerc Drive découpe l'euro et les centimes en deux
+    # éléments distincts. Sans cette alternative on lit 5,00 € au lieu de
+    # 5,52 € : une erreur de 52 centimes, systématique et silencieuse.
+    r"(?<![\d,.])(\d{1,4})\s*€\s*,?\s*(\d{2})\b|"
     r"€\s*(\d{1,4})[.,](\d{2})|"                   # € 2,51
     r"(?<![\d,.])(\d{1,4})\s*€(?![\d])"            # 4 €
 )
+
+# « 0,92 € / l », « 3,07 € le kg » — le prix unitaire que l'enseigne affiche
+# elle-même. Précieux : il permet de retrouver le format quand le libellé ne
+# le donne pas, et de recouper notre propre calcul.
+_UNIT_PRICE_RE = re.compile(
+    r"(\d{1,4})[.,](\d{1,3})\s*€\s*(?:/|le|par|au)\s*"
+    r"(kg|kilos?|g|l|litres?|cl|ml|m|pi[eè]ce|unit[eé]|rouleau|dose|lavage)\b",
+    re.I,
+)
+
+
+def parse_pack_price(text: str) -> float | None:
+    """Prix du PACK : premier prix qui n'est pas un €/kg ni un €/portion.
+
+    Intermarché affiche « la boîte de 87g net égoutté • 28,05 €/Kg » et parfois
+    « 5,82 €/pers » (suggestion recette). Aucun n'est le prix de la boîte : on
+    les masque avant de lire.
+    """
+    if not text:
+        return None
+    masked = _UNIT_PRICE_RE.sub(" ", text)
+    masked = re.sub(r"\d+[.,]\d{1,2}\s*€\s*/\s*\w+", " ", masked)   # €/pers, €/Kg
+    return parse_price(masked)
+
+
+def parse_unit_price(text: str) -> tuple[float, str] | None:
+    """Lit le prix unitaire affiché par l'enseigne, s'il y en a un."""
+    match = _UNIT_PRICE_RE.search(text or "")
+    if not match:
+        return None
+    value = float(f"{match.group(1)}.{match.group(2)}")
+    return value, match.group(3).lower()
 
 
 def parse_price(text: str) -> float | None:
@@ -183,6 +218,8 @@ _MECHANIC_PATTERNS = [
     (re.compile(r"(2\s*(?:e|eme|ème|nd))[^.]{0,30}-?\s*(\d{2})\s*%", re.I), "second_rev"),
     (re.compile(r"2\s*(?:e|eme|ème)\s*(?:a|à)\s*moiti[eé]\s*prix", re.I), "second_50"),
     (re.compile(r"\b3\s*(?:pour|=)\s*2\b", re.I), "3_pour_2"),
+    (re.compile(r"\b2\s*\+\s*1\s*(?:gratuit|offert)", re.I), "3_pour_2"),
+    (re.compile(r"\b1\s*\+\s*1\s*(?:gratuit|offert)", re.I), "second_-100"),
     (re.compile(r"\blot\s*de\s*\d+", re.I), "lot"),
 ]
 

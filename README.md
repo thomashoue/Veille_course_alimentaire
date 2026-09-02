@@ -147,6 +147,25 @@ relecture** (`cart_state`) et retentée. Les clics qui échouent silencieusement
 — le comportement constaté sur Leclerc Drive — sont rattrapés ; ce cas précis
 a son test.
 
+**Constat du 2026-08-31 — les drives bloquent les navigateurs pilotés.**
+Testé en réel, sur profil authentifié à la main :
+
+| Drive | Mécanisme | Message |
+|---|---|---|
+| Leclerc Drive | pare-feu maison | « Accès temporairement restreint — quelque chose dans le comportement du navigateur nous a intrigué » |
+| Courses U | Cloudflare | « Sorry, you have been blocked » |
+
+Ce n'est pas un bug du code : ce sont des contrôles d'accès délibérés, et on
+ne cherche pas à les déguiser — course sans fin, et ce n'est pas à nous d'en
+décider. Conséquence assumée : **le pilotage de navigateur (Playwright) n'est
+pas la voie principale, c'est `parse-page` qui l'est** — l'humain navigue
+normalement, enregistre la page, le code la lit. L'invariant C1 tient
+toujours, puisque la page vient bien du drive. Les clients Playwright
+restent dans `src/drive/` comme infrastructure de secours (et pour
+Intermarché, non testé), mais rien dans le circuit hebdomadaire n'en dépend.
+Le remplissage automatique du panier (§7) tombe avec eux : la liste par
+magasin reste le produit final, le panier se remplit en naviguant.
+
 **Ce qui reste fragile, en toute franchise :** les sélecteurs DOM des trois
 drives et les gabarits des agrégateurs sont écrits d'après la spec et n'ont pas
 pu être confrontés aux sites en direct depuis cet environnement. Ils sont donc
@@ -156,15 +175,131 @@ page non vide — un rapport vide qui ressemble à « pas de promo » est pire
 qu'une erreur. La voie recommandée reste le **XHR** (`parse_search_xhr` est déjà
 là et testé) dès que les endpoints auront été relevés une fois, session ouverte.
 
-En attendant, `--manual data/relevés.json` permet de faire tourner toute la
-chaîne sur des relevés saisis à la main : c'est la voie de secours quand un
-gabarit casse, et elle donne exactement le même rapport.
+### Le script tout-en-un
+
+Le plus simple, un vendredi : lancer le script de capture. Il ouvre les
+recherches enseigne par enseigne, marque une pause le temps que vous
+enregistriez les pages (Ctrl+S ou SingleFile), puis lit tout, lève les
+doutes et sort le comparatif.
+
+```
+scripts\capture-veille.bat      (Windows : double-clic, ou depuis cmd)
+bash scripts/capture-veille.sh   (Git Bash / WSL / Linux / macOS)
+```
+
+Le détail des étapes, si vous préférez les lancer une par une :
+
+### La semaine type (vendredi, ~10 minutes)
+
+On ne vérifie pas les 26 articles du panier : les agrégateurs orientent, et
+seules les pistes se vérifient (constat C1).
+
+```bash
+# 0. Ouvrir les recherches comme onglets dans le navigateur déjà connecté
+#    (aucun cookie copié : c'est votre navigateur, les drives ne le bloquent pas)
+python -m src.cli open-tabs --store leclerc_pleumeleuc --bulk
+
+# 1. Automatique : les agrégateurs remontent les pistes, avec les URL à ouvrir
+python -m src.cli shortlist
+
+# 2. Humain : ouvrir chaque URL dans son navigateur habituel (déjà connecté),
+#    Ctrl+S « page complète » dans un dossier — 3 à 6 pages un vendredi normal.
+#    Astuce : l'extension SingleFile (libre, Chrome/Firefox/Edge) enregistre
+#    TOUS les onglets ouverts en un clic — les 6 Ctrl+S deviennent un seul geste
+
+# 3. Automatique : tout le dossier d'un coup, puis le rapport
+python -m src.cli parse-page --store leclerc_pleumeleuc --dir mes_pages
+python -m src.cli run --no-drive --manual data/manual.json
+```
+
+Pour comparer plusieurs enseignes sur un même panier, enregistrez les pages
+de chacune et empilez-les avec `--append`, puis :
+
+```bash
+python -m src.cli parse-page --store intermarche_montauban --dir pages_inter --append
+python -m src.cli parse-page --store hyperu_yffiniac       --dir pages_u     --append
+python -m src.cli compare --manual data/manual.json
+```
+
+`compare` affiche le face-à-face par article (prix normalisé, meilleur
+retenu, écart), puis l\'affectation par personne avec l\'arbitrage du détour
+et l\'alerte de minimum de commande.
+
+Ce qui ne demande AUCUNE page : Action, Lidl, Aldi, Netto (pas de drive, le
+prix catalogue est le prix magasin — liste papier automatique), les fruits et
+légumes (hors périmètre), et les postes à stocker sans signal de promo — le
+ledger garde leur historique, on n'y revient que quand une piste apparaît.
+
+### La voie qui marche partout : `parse-page`
+
+Vous naviguez dans le drive **normalement**, dans votre navigateur habituel.
+Sur la page de résultats, `Ctrl+S` → « Page web complète ». Puis :
+
+```bash
+python -m src.cli parse-page --store leclerc_pleumeleuc --file "lait.html"
+python -m src.cli run --no-drive --manual data/manual.json
+```
+
+Aucun pilotage, donc rien à détecter, et rien qui casse quand le site change
+de pare-feu applicatif. Le module essaie trois lectures dans l'ordre : JSON-LD,
+JSON embarqué dans la page, puis les blocs HTML. Ajoutez `--append` pour
+empiler plusieurs recherches avant de lancer le run.
+
+`--manual` accepte aussi un JSON saisi à la main — ou produit par
+**Claude dans Chrome**, qui navigue dans votre navigateur et n'est donc pas
+bloqué : voir [`docs/claude-dans-chrome.md`](docs/claude-dans-chrome.md) pour
+le prompt prêt à coller. Dans tous les cas, même contrat : des relevés bruts,
+zéro calcul en chemin, et le même rapport à l'arrivée.
 
 **Pièges déjà encodés :** propagation de session Leclerc vers
 `fd7-courses` (« Commencer mes courses »), modale de confirmation à la
 suppression, bascule du magasin actif chez Intermarché (le client **refuse** de
 travailler sur le mauvais magasin), prix masqués sur `coursesu.com` sans
 magasin sélectionné (traité comme session incomplète, pas comme produit absent).
+
+---
+
+## Le jeudi : décider les menus en famille
+
+On n'achète plus par habitude, mais par **besoin** : les 7 dîners de la semaine
+décident la liste de courses. La page `web/menu-semaine.html` sert à la choisir
+sur une tablette ou un téléphone, à toucher.
+
+```bash
+# Lance le serveur sur le PC (celui qui fait la veille du vendredi).
+python -m src.cli menu --serve
+#   → Menu de la semaine servi sur http://localhost:8000/
+#   → Depuis la tablette (même wifi) : http://<IP-du-PC>:8000/
+```
+
+Chaque jour a un menu déroulant (+ un bouton 🎲 pour piocher), un curseur pour
+le nombre de parts, des filtres (rapide, four, mijoté, poisson…) et un bouton
+**Régénérer** qui repropose une semaine équilibrée (poisson plafonné à 2,
+protéines variées, sans répéter les semaines récentes). La colonne de droite
+recalcule la liste en direct, groupée en *À acheter au drive / Frais / Épicerie*.
+
+Le bouton **Valider** ne donne aucune commande à recopier : il écrit l'état
+directement sur le PC —
+
+* `data/menu_courant.json` — le menu et la liste, lus le vendredi par la veille prix ;
+* `data/menu_history.json` — la rotation anti-répétition ;
+* `data/inventory.json`    — le stock, décrémenté des ingrédients cuisinés.
+
+…puis propose le mail récapitulatif au foyer. Ouverte hors serveur (fichier
+statique, page partagée), la même page retombe simplement sur le mail.
+
+Les données de la page (recettes, catégories, destinataires) viennent de
+`config/recipes.yaml`, `config/basket.yaml` et `config/sources.yaml`. Servie,
+elle les relit à chaque fois ; pour rafraîchir l'instantané figé dans le
+fichier commité (utile si la page est partagée telle quelle) :
+
+```bash
+python scripts/build_menu_page.py
+```
+
+En ligne de commande, sans page : `menu --list` (recettes disponibles),
+`menu` (tirage), `menu --pick <ids> --cook --save` (verrouiller un choix),
+`stock` (inventaire courant).
 
 ---
 

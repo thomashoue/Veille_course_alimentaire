@@ -33,7 +33,9 @@ class Store:
     drive_base_url: str | None = None
     search_url_template: str | None = None
     cart_url_template: str | None = None
+    offers_url: str | None = None   # page « offres de la semaine » (enseignes sans recherche produit)
     format: str = "super"
+    min_order_eur: float | None = None   # minimum de commande du drive
     excluded: bool = False
 
     def search_url(self, query: str) -> str | None:
@@ -56,12 +58,17 @@ class BasketItem:
     id: str
     label: str
     category: str
-    unit: str                                   # unité de comparaison
+    unit: str                                   # unité de comparaison (prix)
+    stock_unit: str = ""                        # unité d'inventaire (défaut : unit)
     bulk_worthy: bool = False
     keywords: list[str] = field(default_factory=list)
+    # Si l'un de ces mots apparaît dans un libellé, le produit n'est PAS cet
+    # article — « litière rongeurs » n'est pas une litière pour chat.
+    exclude_keywords: list[str] = field(default_factory=list)
     hard_constraints: list[str] = field(default_factory=list)
     attribute_rules: dict[str, dict[str, list[str]]] = field(default_factory=dict)
-    qty_per_run: float = 1.0
+    qty_per_run: float = 1.0       # quantité d'un run, dans l'unité de l'article
+    qty_stock: float | None = None  # quantité visée quand on stocke (bulk_worthy)
     out_of_scope_drive: bool = False
     weight_basis_required: bool = False
     fallback_advice: str | None = None
@@ -69,6 +76,30 @@ class BasketItem:
     @property
     def base_unit(self) -> str:
         return units.base_unit(self.unit)
+
+
+# --------------------------------------------------------------------------- #
+# Recettes (besoin → liste de courses)
+# --------------------------------------------------------------------------- #
+@dataclass
+class Ingredient:
+    label: str
+    qty: float                       # pour servings_base parts
+    unit: str
+    basket_item: str | None = None   # relié à un article du panier si possible
+    category: str = ""               # sinon : 'fl', 'epicerie', 'cremerie', 'poisson'…
+
+
+@dataclass
+class Recipe:
+    id: str
+    name: str
+    tags: list[str] = field(default_factory=list)
+    proteine: str = ""               # legumineuses | oeufs | fromage | poisson
+    ingredients: list[Ingredient] = field(default_factory=list)
+
+    def has_tag(self, tag: str) -> bool:
+        return tag in self.tags
 
 
 # --------------------------------------------------------------------------- #
@@ -80,12 +111,21 @@ class Source(str, Enum):
     AGGREGATOR = "aggregator"
 
 
-MECHANIC_SECOND_DISCOUNTS = {
-    "second_-30": 0.30,
-    "second_-50": 0.50,
-    "second_-60": 0.60,
-    "second_-70": 0.70,
-}
+def second_discount(mechanic: str | None) -> float | None:
+    """Fraction de remise d'une mécanique « 2ᵉ à -X% », pour tout X.
+
+    Vu en rayon Intermarché : « -68% SUR LE 2ème ». On ne fige plus une liste.
+    """
+    if not mechanic or not mechanic.startswith("second_-"):
+        return None
+    try:
+        return int(mechanic.rsplit("-", 1)[1].rstrip("%")) / 100.0
+    except (ValueError, IndexError):
+        return None
+
+
+# Rétrocompat : quelques valeurs nommées encore utilisées ici et là.
+MECHANIC_SECOND_DISCOUNTS = {f"second_-{p}": p / 100 for p in (30, 50, 60, 70)}
 
 
 @dataclass
@@ -131,6 +171,9 @@ class PriceObservation:
     banner: str | None = None
     attributes: dict[str, str] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
+    # Incohérence détectée à la lecture (ex. prix du pack égal au prix au
+    # litre affiché) : l'observation sort en « à vérifier », jamais en offre.
+    suspect_reason: str | None = None
     drive_ref: str | None = None               # référence produit côté drive
     available: bool = True
 

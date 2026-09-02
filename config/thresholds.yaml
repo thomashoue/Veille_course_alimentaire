@@ -19,7 +19,7 @@ params:
   # Conversion poids brut → net égoutté (P5). Uniquement là où le ratio est
   # connu : ailleurs on refuse de convertir et l'observation part en FLAG.
   drained_ratios:
-    conserve: 0.70
+    conserve: 0.67   # mesuré : sardines 135 g brut -> ~90 g égoutté
 
 thresholds:
   lait_demi_ecreme:

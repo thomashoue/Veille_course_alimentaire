@@ -27,6 +27,15 @@ class DriveProduct:
     pack: Pack | None = None
     url: str | None = None
     available: bool = True
+    # Prix unitaire affiché par l'enseigne elle-même (« 0,92 € / l »). On ne
+    # s'en sert JAMAIS comme prix de référence — le nôtre reste calculé — mais
+    # il permet de retrouver un format absent du libellé, et de recouper.
+    unit_price_hint: float | None = None
+    unit_hint_unit: str | None = None
+    # Prix barré affiché à côté (« au lieu de ») : alimente regular_price.
+    regular_price: float | None = None
+    # Base de poids lue sur la vignette complète, avant nettoyage du libellé.
+    weight_basis: str | None = None
     raw: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:

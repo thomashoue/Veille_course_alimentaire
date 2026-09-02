@@ -44,6 +44,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         manual_file=args.manual,
         pickup_date=pickup,
         use_drive=not args.no_drive,
+        collect_sources=True if args.collect else None,
         offline=args.offline,
         headless=not args.headful,
         report_dir=args.out or (DATA_DIR / "reports"),
@@ -131,6 +132,761 @@ def cmd_search(args: argparse.Namespace) -> int:
     return 0
 
 
+def _parse_directory(args: argparse.Namespace, config) -> int:
+    """Toutes les pages d'un dossier, en un seul relevé.
+
+    Avec --store : tout rattaché à ce magasin. Sans --store (mode auto) : le
+    magasin de chaque page est détecté depuis son contenu — c'est ce qui permet
+    à SingleFile de tout déverser dans un seul dossier (Téléchargements compris)
+    sans tri manuel.
+    """
+    from .drive.offline import detect_store, observations_from_page
+
+    directory = Path(args.dir)
+    pages = sorted(directory.glob("*.htm*"))
+    if not pages:
+        print(f"Aucun fichier .html dans {directory}")
+        return 1
+
+    fixed_store = config.store(args.store) if args.store else None
+    seen: dict[str, object] = {}
+    unrouted = 0
+    for page in pages:
+        html = page.read_text(encoding=args.encoding, errors="replace")
+        if fixed_store is not None:
+            store = fixed_store
+        else:
+            store_id = detect_store(html, config)
+            if store_id is None:
+                print(f"{page.name:<40} magasin non reconnu — ignoré")
+                unrouted += 1
+                continue
+            store = config.store(store_id)
+        observations, report = observations_from_page(html, store, config)
+        alerte = "" if report.get("store_city_seen", True) else "  ⚠ ville absente"
+        print(f"{page.name:<40} {store.id:<22} "
+              f"{report['matched_to_basket']} relevé(s){alerte}")
+        for obs in observations:
+            seen[obs.id] = obs
+
+    if not seen:
+        print("\nRien d'exploitable dans ce dossier.")
+        return 1
+
+    out = Path(args.out or (DATA_DIR / "manual.json"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    existing = []
+    if out.exists() and args.append:
+        existing = json.loads(out.read_text(encoding="utf-8"))
+    rows = existing + [obs.to_row() for obs in seen.values()]
+    out.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\n{len(seen)} relevé(s) uniques → {out}")
+    print(f"Ensuite : python -m src.cli run --no-drive --manual {out}")
+    return 0
+
+
+def cmd_capture(args: argparse.Namespace) -> int:
+    """Capture ce que le drive renvoie vraiment, pour caler les sélecteurs."""
+    from .drive.capture import capture_search
+
+    config = get_config(args.config)
+    store = config.store(args.store)
+    directory = capture_search(
+        store,
+        args.query,
+        args.out or (DATA_DIR / "captures"),
+        headless=args.headless,
+        include_cart=args.cart,
+    )
+    diagnostic = json.loads((directory / "diagnostic.json").read_text(encoding="utf-8"))
+    print(f"\nCapture écrite dans {directory}\n")
+    print(f"  page          : {diagnostic['page_size']} caractères")
+    print(f"  réponses JSON : {diagnostic['xhr_json_captured']}")
+    print(f"  produits lus par les sélecteurs actuels : "
+          f"{diagnostic.get('products_found_by_current_selectors', 0)}")
+    for sample in diagnostic.get("sample", []):
+        print(f"    · {sample['price']} — {sample['label']}")
+    print(f"\n  → {diagnostic['verdict']}\n")
+    print("Les fichiers sont masqués (e-mail, téléphone, numéros longs) et ne")
+    print("contiennent ni en-têtes ni cookies. Relisez-les avant de les partager.")
+    return 0
+
+
+def _read_clipboard() -> str:
+    """Contenu du presse-papiers, sans dépendance externe."""
+    import subprocess
+
+    if sys.platform == "win32":
+        command = [
+            "powershell", "-noprofile", "-command",
+            "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8; Get-Clipboard -Raw",
+        ]
+    elif sys.platform == "darwin":
+        command = ["pbpaste"]
+    else:
+        command = ["xclip", "-selection", "clipboard", "-o"]
+    result = subprocess.run(command, capture_output=True, timeout=10)
+    return result.stdout.decode("utf-8", errors="replace")
+
+
+def _extract_json_array(text: str) -> str:
+    """Isole le tableau JSON d'une réponse d'assistant (souvent entouré de prose)."""
+    start = text.find("[")
+    end = text.rfind("]")
+    if start == -1 or end <= start:
+        raise ValueError("aucun tableau JSON [ … ] trouvé dans le texte collé")
+    return text[start : end + 1]
+
+
+def _find_chromium() -> str | None:
+    """Localise un navigateur Chromium (Chrome/Edge/Brave) pour --new-window.
+
+    Chrome ignore souvent la demande de nouvelle fenêtre passée par la voie
+    générique du module webbrowser ; en l'appelant directement avec
+    --new-window, une fenêtre neuve est garantie, séparée des onglets ouverts.
+    """
+    import os
+    import shutil
+
+    for name in ("google-chrome", "chromium", "chromium-browser", "brave-browser", "microsoft-edge"):
+        found = shutil.which(name)
+        if found:
+            return found
+    if sys.platform == "win32":
+        candidates = []
+        for var in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"):
+            base = os.environ.get(var, "")
+            if base:
+                candidates += [
+                    os.path.join(base, "Google", "Chrome", "Application", "chrome.exe"),
+                    os.path.join(base, "Microsoft", "Edge", "Application", "msedge.exe"),
+                    os.path.join(base, "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+                ]
+        for path in candidates:
+            if os.path.exists(path):
+                return path
+    elif sys.platform == "darwin":
+        for path in (
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+        ):
+            if os.path.exists(path):
+                return path
+    return None
+
+
+def cmd_open_tabs(args: argparse.Namespace) -> int:
+    """Ouvre les recherches de drive comme onglets dans le navigateur PAR DÉFAUT.
+
+    Aucun cookie n'est extrait ni copié : les onglets s'ouvrent dans VOTRE
+    navigateur, celui où vous êtes déjà connecté, qui apporte lui-même sa
+    session. C'est la seule automatisation qui a un sens ici — les drives
+    bloquent l'automatisation, pas votre navigateur.
+
+    Optionnellement, écrit un .bat/.sh rejouable au lieu d'ouvrir tout de suite.
+    """
+    import webbrowser
+
+    config = get_config(args.config)
+    store = config.store(args.store)
+
+    if args.items:
+        items = [config.item(i) for i in args.items if i in config.items]
+    elif args.bulk:
+        items = [i for i in config.items.values() if i.bulk_worthy]
+    else:
+        items = [
+            i for i in config.items.values()
+            if not i.out_of_scope_drive and i.category != "fl"
+        ]
+
+    urls: list[tuple[str, str]] = []
+    if store.search_url_template:
+        # Drive : une recherche par article.
+        for item in items:
+            query = item.keywords[0] if item.keywords else item.label
+            url = store.search_url(query)
+            if url:
+                urls.append((item.label, url))
+    elif store.offers_url:
+        # Enseigne sans recherche produit (Lidl, Aldi…) : la page des offres.
+        urls.append(("Offres de la semaine", store.offers_url))
+
+    if not urls:
+        print(f"Ni recherche ni page d'offres pour {store.name}. "
+              "Ajoutez search_url_template ou offers_url dans config/stores.yaml.")
+        return 1
+
+    if args.script:
+        path = Path(args.script)
+        if sys.platform == "win32":
+            lines = ["@echo off", f"rem Recherches / offres — {store.name}",
+                     "rem Nouvelle fenêtre du navigateur par défaut, puis onglets"]
+            # start "" <url> ouvre dans le navigateur par défaut ; on force une
+            # fenêtre neuve via le protocole en ouvrant le premier seul.
+            lines += [f'start "" "{url}"' for _, url in urls]
+        else:
+            opener = "open" if sys.platform == "darwin" else "xdg-open"
+            lines = ["#!/bin/sh", f"# Recherches / offres — {store.name}"]
+            lines += [f'{opener} "{url}"' for _, url in urls]
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"{len(urls)} recherche(s) écrites dans {path} — lancez-le quand vous voulez.")
+        return 0
+
+    same_window = args.same_window
+    only_urls = [url for _, url in urls]
+    for label, _ in urls:
+        print(f"  · {label}")
+
+    delay = float(args.delay or 0)
+    chromium = None if same_window else _find_chromium()
+
+    if delay > 0:
+        # Rythme humain : un onglet à la fois, avec pause. Ouvrir 9 recherches
+        # d'un coup déclenche l'anti-robot d'Intermarché (« vitesse surhumaine »).
+        import time
+
+        import subprocess
+
+        cible = "onglets courants" if same_window else "nouvelle fenêtre"
+        print(f"\nOuverture espacée de {delay:g}s ({store.name}) — {cible}…")
+        for i, url in enumerate(only_urls):
+            new_window = (i == 0 and not same_window)
+            if chromium:
+                cmd = [chromium, "--new-window", url] if new_window else [chromium, url]
+                subprocess.Popen(cmd)
+            else:
+                webbrowser.open(url, new=1 if new_window else 2, autoraise=new_window)
+            if i < len(only_urls) - 1:
+                time.sleep(delay)
+    elif chromium:
+        import subprocess
+
+        print(f"\nNouvelle fenêtre ({store.name}) — {len(only_urls)} onglet(s).")
+        subprocess.Popen([chromium, "--new-window", *only_urls])
+    elif same_window:
+        print(f"\nOuverture dans les onglets courants ({store.name})…")
+        for url in only_urls:
+            webbrowser.open_new_tab(url)
+    else:
+        print(f"\nNouvelle fenêtre ({store.name}) via le navigateur par défaut…")
+        for i, url in enumerate(only_urls):
+            webbrowser.open(url, new=1 if i == 0 else 2, autoraise=(i == 0))
+    print("Aucun cookie n'est copié : c'est votre navigateur, déjà connecté.")
+    print("\nEnregistrez les pages (Ctrl+S, ou SingleFile « tous les onglets »), puis :")
+    print(f"  python -m src.cli parse-page --store {store.id} --dir <dossier>")
+    return 0
+
+
+def cmd_paste(args: argparse.Namespace) -> int:
+    """Importe des relevés JSON depuis le presse-papiers (ou un fichier/stdin).
+
+    C'est le chaînon avec Claude dans Chrome : l'extension ne peut pas
+    enregistrer de fichier (pas de Ctrl+S pour une extension), mais elle rend
+    du JSON dans la conversation. Copier sa réponse puis `paste` suffit.
+    """
+    from .models import PriceObservation
+    from .pipeline import load_observations
+
+    config = get_config(args.config)
+    if args.file:
+        raw = Path(args.file).read_text(encoding="utf-8", errors="replace")
+    elif args.stdin:
+        raw = sys.stdin.read()
+    else:
+        try:
+            raw = _read_clipboard()
+        except Exception as exc:
+            print(f"Presse-papiers illisible ({exc}) — utilisez --file ou --stdin.")
+            return 2
+
+    try:
+        rows = json.loads(_extract_json_array(raw))
+    except ValueError as exc:
+        print(f"Rien d'importable : {exc}")
+        return 2
+
+    known_fields = set(PriceObservation.__dataclass_fields__)
+    valid, errors = [], []
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            errors.append(f"entrée {index} : pas un objet")
+            continue
+        store = row.get("store_id")
+        item = row.get("basket_item_id")
+        if store not in config.stores:
+            errors.append(f"entrée {index} : magasin inconnu {store!r}")
+            continue
+        if item not in config.items:
+            errors.append(f"entrée {index} : article inconnu {item!r}")
+            continue
+        if not row.get("product_label") or row.get("price_eur") is None:
+            errors.append(f"entrée {index} : libellé ou prix manquant")
+            continue
+        valid.append({k: v for k, v in row.items() if k in known_fields})
+
+    if errors:
+        print("Écartées :")
+        for error in errors:
+            print(f"  · {error}")
+        if not valid:
+            print(f"\nMagasins valides : {', '.join(sorted(config.stores))}")
+            print(f"Articles valides : {', '.join(sorted(config.items))}")
+            return 1
+
+    out = Path(args.out or (DATA_DIR / "manual.json"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    existing = []
+    if out.exists() and not args.replace:
+        existing = json.loads(out.read_text(encoding="utf-8"))
+    merged = existing + valid
+    out.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    for row in valid:
+        print(f"  {row['price_eur']:>7.2f} €  {config.item(row['basket_item_id']).label:<22} "
+              f"{row['product_label'][:60]}")
+    print(f"\n{len(valid)} relevé(s) importés → {out} ({len(merged)} au total)")
+    print(f"Ensuite : python -m src.cli run --no-drive --manual {out}")
+    return 0
+
+
+def cmd_review(args: argparse.Namespace) -> int:
+    """Liste ce qui mérite une vérification sur la fiche produit — et rien d'autre.
+
+    Le pipeline sait dire quand il doute : prix incohérent, format ou base de
+    poids absents, produit jamais confirmé en drive. Cette commande rassemble
+    ces cas, avec l'URL quand on l'a, et un prompt prêt pour Claude dans Chrome :
+    l'extension ouvre ces fiches (dans votre navigateur, non bloqué), et rend
+    du JSON corrigé que « paste » réabsorbe. On ne vérifie que les doutes.
+    """
+    from .normalize import normalize
+    from .pipeline import load_observations
+    from .validate import validate
+
+    config = get_config(args.config)
+    observations = load_observations(args.manual, config)
+
+    doutes: list[tuple[str, PriceObservation]] = []
+    for obs in observations:
+        if obs.basket_item_id not in config.items:
+            continue
+        normalize(obs, config)
+        verdict = validate(obs, config)
+        raisons = []
+        if obs.suspect_reason:
+            raisons.append(obs.suspect_reason)
+        # Règles « à confirmer » : format absent (P4), base de poids (P5),
+        # avantage carte hors fenêtre (P6), promo trompeuse (P7), non vérifié (C1).
+        for rule, reason in zip(verdict.rules, verdict.reasons):
+            if rule in ("P4", "P5", "P6", "P7", "C1", "C-CHECK"):
+                raisons.append(f"[{rule}] {reason}")
+        if raisons:
+            doutes.append(("; ".join(raisons), obs))
+
+    if not doutes:
+        print("Aucun doute : tous les relevés sont exploitables tels quels.")
+        return 0
+
+    print(f"{len(doutes)} relevé(s) à vérifier sur la fiche produit :\n")
+    urls = []
+    for raison, obs in doutes:
+        store = config.store(obs.store_id)
+        print(f"  · {config.item(obs.basket_item_id).label} — {obs.product_label[:50]}")
+        print(f"    {store.name} · {raison}")
+        if obs.source_url:
+            print(f"    {obs.source_url}")
+            urls.append(obs.source_url)
+        print()
+
+    if args.prompt:
+        print("=" * 68)
+        print("PROMPT pour Claude dans Chrome (copier-coller) :")
+        print("=" * 68)
+        print(
+            "Ouvre chacune de ces fiches produit (je suis connecté) et relève "
+            "SANS CALCULER : libellé exact, prix de la boîte affiché, grammage "
+            "(en précisant « net égoutté » si mentionné), mécanique promo "
+            "éventuelle. Rends un tableau JSON, un objet par produit, avec les "
+            "champs store_id, basket_item_id, product_label, price_eur, "
+            "pack_size, pack_unit, weight_basis, verified_in_drive:true, "
+            'source:"drive". URLs :'
+        )
+        for url in urls or ["(aucune URL relevée — ouvre les fiches à la main)"]:
+            print(f"  {url}")
+    else:
+        print("Ajoutez --prompt pour un texte prêt à coller dans Claude dans Chrome.")
+    print("\nPuis : python -m src.cli paste   (recolle le JSON corrigé)")
+    return 0
+
+
+def cmd_compare(args: argparse.Namespace) -> int:
+    """Analyse un panier multi-enseignes : face-à-face par article + affectation.
+
+    Nourri par des relevés (--manual), c'est le « test 3 enseignes » sur VOS
+    prix : chaque article comparé enseigne par enseigne sur le prix normalisé,
+    puis l'affectation par corridor avec l'arbitrage du détour.
+    """
+    from collections import defaultdict
+
+    from .assign import assign, person_label
+    from .pipeline import build_offers, load_observations, shortlist
+    from .units import format_eur, format_price
+
+    config = get_config(args.config)
+    observations = load_observations(args.manual, config)
+    kept, _ = shortlist(observations, config)
+    offers, pistes = build_offers(kept, config)
+    plan = assign(offers, config)
+
+    print("=" * 68)
+    print("FACE-À-FACE PAR ARTICLE — meilleur prix normalisé retenu")
+    print("=" * 68)
+    par_article = defaultdict(list)
+    for offer in offers:
+        par_article[offer.item.id].append(offer)
+    for item_id, offs in par_article.items():
+        item = config.item(item_id)
+        seuil = config.threshold(item_id).get("good", "—")
+        print(f"\n{item.label}  (seuil bon : {seuil} €/{item.base_unit})")
+        offs.sort(key=lambda o: o.unit_price if o.unit_price is not None else 9e9)
+        for i, offer in enumerate(offs):
+            store = config.store(offer.store_id)
+            up = (format_price(offer.unit_price, offer.observation.unit_price_unit)
+                  if offer.unit_price is not None else "n/c")
+            flags = []
+            if offer.observation.weight_basis == "brut":
+                flags.append("brut→égoutté")
+            if offer.observation.loyalty_pct:
+                flags.append(f"carte {offer.observation.loyalty_pct:g}%")
+            flag = f"  [{', '.join(flags)}]" if flags else ""
+            mark = "   ← retenu" if i == 0 else ""
+            print(f"   {offer.observation.price_eur:>6.2f} €  {up:>12}  "
+                  f"{store.name[:24]:<24} {offer.grade.value}{flag}{mark}")
+        if len(offs) > 1:
+            best, worst = offs[0], offs[-1]
+            if best.unit_price and worst.unit_price:
+                ecart = (worst.unit_price - best.unit_price) / worst.unit_price
+                print(f"   → écart {ecart:.0%} entre le meilleur et le pire")
+
+    print("\n" + "=" * 68)
+    print("AFFECTATION — par personne, corridor et détour")
+    print("=" * 68)
+    grouped = plan.by_assignee()
+    for who in ("household", "charlotte", "thomas"):
+        baskets = grouped.get(who)
+        if not baskets:
+            continue
+        print(f"\n### {person_label(who)}")
+        for basket in baskets:
+            mini = (f" · min commande {format_eur(basket.store.min_order_eur)}"
+                    if basket.store.min_order_eur else "")
+            total = sum(o.observation.price_eur for o in basket.offers)
+            alerte = ""
+            if basket.store.min_order_eur and total < basket.store.min_order_eur:
+                alerte = f"  ⚠ panier {format_eur(total)} SOUS le minimum"
+            print(f"  {basket.store.name} — {basket.n_items} art. · "
+                  f"gain net {format_eur(basket.net_gain_eur)} · "
+                  f"détour {basket.store.detour_km:g} km{mini}{alerte}")
+            for offer in basket.offers:
+                print(f"      - {offer.item.label}: {offer.observation.product_label} "
+                      f"({format_eur(offer.observation.price_eur)})")
+    if plan.dropped:
+        print("\n  Magasins écartés :")
+        for basket in plan.dropped:
+            print(f"    - {basket.store.name} : {basket.drop_reason}")
+    if plan.deferred:
+        print("\n  Conforme mais pas cette semaine (détour non amorti) :")
+        for item_id, offer in plan.deferred.items():
+            print(f"    - {config.item(item_id).label} chez "
+                  f"{config.store(offer.store_id).name}")
+
+    print(f"\nÉconomie totale estimée : {format_eur(plan.total_saving)} · "
+          f"gain net : {format_eur(plan.total_net_gain)}")
+    if pistes:
+        print(f"{len(pistes)} relevé(s) en « à vérifier » (non actionnables).")
+    return 0
+
+
+def cmd_stock(args: argparse.Namespace) -> int:
+    """Affiche ou met à jour l'inventaire du garde-manger."""
+    from .inventory import Inventory
+
+    config = get_config(args.config)
+    inv = Inventory()
+
+    def _apply(specs, sign):
+        for spec in specs:
+            parts = spec.split(":")
+            item = parts[0]
+            qty = float(parts[1]) if len(parts) > 1 else 0.0
+            unit = parts[2] if len(parts) > 2 else (
+                config.items[item].stock_unit or config.items[item].unit
+                if item in config.items else "unite"
+            )
+            if sign > 0:
+                inv.add(item, qty, unit)
+            else:
+                inv.consume(item, qty, unit)
+            print(f"  {'+' if sign > 0 else '−'} {item} {qty:g} {unit}")
+
+    if args.reset:
+        inv.reset(); inv.save(); print("Stock remis à zéro."); return 0
+    if args.add:
+        _apply(args.add, +1); inv.save()
+    if args.remove:
+        _apply(args.remove, -1); inv.save()
+
+    print("\n=== Stock courant ===")
+    current = inv.current()
+    if not current:
+        print("  (vide — hypothèse de départ : stock à zéro)")
+    for (item, unit), qty in sorted(current.items()):
+        label = config.items[item].label if item in config.items else item
+        print(f"  {label:<24} {qty:g} {unit}")
+    return 0
+
+
+def cmd_menu(args: argparse.Namespace) -> int:
+    """Menu de la semaine + liste de courses par besoin."""
+    from .menu import plan_week, record_week, shopping_list
+
+    config = get_config(args.config)
+    if not config.recipes:
+        print("Aucune recette : config/recipes.yaml manquant.")
+        return 1
+
+    if getattr(args, "serve", False):
+        from .webmenu import serve
+        serve(config, host=args.host, port=args.port)
+        return 0
+
+    if args.list:
+        print("=== Recettes disponibles (id — nom) ===")
+        for r in config.recipes.values():
+            tags = f"  [{', '.join(r.tags)}]" if r.tags else ""
+            print(f"  {r.id:<28} {r.name}{tags}")
+        return 0
+
+    if args.pick:
+        ids = [i.strip() for i in ",".join(args.pick).replace(" ", ",").split(",") if i.strip()]
+        inconnus = [i for i in ids if i not in config.recipes]
+        if inconnus:
+            print(f"Recette(s) inconnue(s) : {', '.join(inconnus)}")
+            print("Liste : python -m src.cli menu --list")
+            return 2
+        week = [config.recipe(i) for i in ids]
+    else:
+        week = plan_week(
+        config,
+        n=args.days,
+        fish_max=args.fish_max,
+        seed=args.seed,
+        avoid_recent=not args.repeat_ok,
+        )
+    stock = None
+    if not args.ignore_stock:
+        from .inventory import Inventory
+        stock = Inventory().current()
+    menu = shopping_list(config, week, servings=args.servings, stock=stock)
+
+    print(f"=== Menu de la semaine ({args.servings or config.servings_base} parts) ===\n")
+    for jour, recipe in menu.week:
+        tags = f"  ({', '.join(recipe.tags)})" if recipe.tags else ""
+        print(f"  {jour:<10} {recipe.name}{tags}")
+
+    print("\n=== À acheter au drive (comparé sur la veille prix) ===")
+    for line in menu.to_buy:
+        item = config.items.get(line.basket_item)
+        cat = f"[{item.category}] " if item else ""
+        print(f"  {cat}{line.label} — {line.qty:g} {line.unit}")
+
+    if menu.pantry:
+        print("\n=== Épicerie (hors panier suivi) ===")
+        for line in menu.pantry:
+            print(f"  {line.label} — {line.qty:g} {line.unit}")
+
+    if menu.fresh:
+        print("\n=== Frais : marché / Grand Frais / Ecomiam (hors veille prix) ===")
+        for line in menu.fresh:
+            print(f"  {line.label} — {line.qty:g} {line.unit}")
+
+    if menu.covered:
+        print("\n=== Déjà en stock (rien à acheter) ===")
+        for line in menu.covered:
+            print(f"  {line.label} — besoin {line.need:g} {line.unit}, "
+                  f"en stock {line.in_stock:g}")
+
+    if args.cook:
+        from .inventory import Inventory, consume_menu
+        inv = Inventory()
+        consume_menu(inv, config, [r for _, r in menu.week], servings=args.servings)
+        inv.save()
+        print("\nRepas décomptés du stock (--cook).")
+    if args.save or args.cook:
+        record_week([r.id for _, r in menu.week])
+        print("Semaine enregistrée (évitera de refaire ces plats la prochaine fois).")
+    print("\nRégénérer une autre semaine : ajoutez --seed <n> ou relancez.")
+    return 0
+
+
+def cmd_shortlist(args: argparse.Namespace) -> int:
+    """Interroge les agrégateurs et dit QUOI vérifier, et OÙ.
+
+    C'est le constat C1 rendu pratique : on ne vérifie pas tout le panier,
+    seulement les pistes que les catalogues font remonter — plus les postes à
+    stocker dont le seuil mérite un coup d'œil.
+    """
+    from .normalize import normalize
+    from .pipeline import collect, shortlist
+    from .validate import grade as grade_fn
+
+    config = get_config(args.config)
+    observations = collect(config, args.items, offline=args.offline)
+    kept, _ = shortlist(observations, config)
+
+    par_magasin: dict[str, dict[str, list]] = {}
+    for obs in kept:
+        store = config.stores.get(obs.store_id)
+        if store is None or not store.has_drive:
+            continue
+        par_magasin.setdefault(store.id, {}).setdefault(obs.basket_item_id, []).append(obs)
+
+    if not par_magasin:
+        print("Aucune piste en drive cette semaine (collecte vide ou tout écarté).")
+        print("Les postes à stocker restent consultables : run --no-drive --manual …")
+        return 0
+
+    total = 0
+    for store_id, items in par_magasin.items():
+        store = config.store(store_id)
+        print(f"\n{store.name} — {len(items)} article(s) à vérifier")
+        for item_id, pistes in items.items():
+            item = config.item(item_id)
+            meilleure = min(p.price_eur for p in pistes)
+            query = item.keywords[0] if item.keywords else item.label
+            url = store.search_url(query)
+            print(f"  · {item.label:<24} annoncé dès {meilleure:.2f} € "
+                  f"({len(pistes)} piste(s))")
+            if url:
+                print(f"    {url}")
+            total += 1
+    print(f"\n{total} recherche(s) à ouvrir. Pour chaque page : Ctrl+S dans un "
+          "dossier, puis :")
+    print("  python -m src.cli parse-page --store <magasin> --dir <dossier>")
+    return 0
+
+
+def cmd_parse_page(args: argparse.Namespace) -> int:
+    """Lit une page de drive enregistrée depuis le navigateur habituel.
+
+    Aucun pilotage : c'est la voie qui reste ouverte quand le drive bloque les
+    navigateurs automatisés, et la plus durable des deux.
+    """
+    from .drive.offline import analyze_page, observations_from_page
+
+    config = get_config(args.config)
+
+    if args.dir:
+        return _parse_directory(args, config)
+
+    if not args.file:
+        print("Il faut --file (une page) ou --dir (un dossier de pages).")
+        return 2
+    if not args.store:
+        print("--store est requis avec --file (le dossier --dir le détecte seul).")
+        return 2
+    store = config.store(args.store)
+
+    html = Path(args.file).read_text(encoding=args.encoding, errors="replace")
+
+    if args.diagnose:
+        # Découverte d'un gabarit inconnu : on n'affiche que de la structure.
+        analysis = analyze_page(html)
+        print(f"Page : {analysis['page_size']} caractères, "
+              f"{analysis['prices_in_page']} prix repérés dans le texte brut")
+        print(f"JSON embarqué : {analysis['embedded_json_markers'] or 'aucun marqueur connu'}")
+        print("\nÉléments porteurs de prix, les plus fréquents :\n")
+        print(f"  {'n':>5}  {'balise':<10} {'classe':<34} extrait")
+        for candidate in analysis["candidates"]:
+            print(f"  {candidate['count']:>5}  {candidate['tag']:<10} "
+                  f"{candidate['class']:<34} {candidate['sample'][:70]}")
+        from .drive.offline import json_shape_report
+        shapes = json_shape_report(html) if analysis["embedded_json_markers"] else []
+        if shapes:
+            print("\nJSON embarqué — formes d'objets les plus fréquentes (clés) :\n")
+            for sh in shapes:
+                print(f"  x{sh['count']:<4} clés : {', '.join(sh['keys'])}")
+                interesting = {k: v for k, v in sh["sample"].items()
+                               if any(t in k.lower() for t in ('nam','nom','label','libel','titl','price','prix','amount','montant'))}
+                if interesting:
+                    print(f"        ex : {interesting}")
+            has_price_field = any(
+                any(t in k.lower() for t in ("price", "prix", "amount", "montant", "tarif"))
+                for sh in shapes for k in sh["keys"]
+            )
+            if not has_price_field:
+                print("\n  ⚠ Aucun champ de prix dans ce JSON : c'est l'ossature CMS de la")
+                print("  page (navigation, bannières), pas le catalogue. Les produits sont")
+                print("  chargés par un appel réseau APRÈS le chargement, absents du HTML")
+                print("  enregistré. Deux voies :")
+                print("    · augmenter le délai SingleFile à 5 s ET faire défiler les résultats")
+                print("      avant l'enregistrement, pour que les produits soient rendus ;")
+                print("    · sinon, lire la page à l'écran avec Claude dans Chrome (vision)")
+                print("      puis paste, ou passer par les agrégateurs (run --collect).")
+            else:
+                print("\n  Copiez ce bloc : les noms de champs suffisent à lire le catalogue.")
+            return 0
+        if not analysis["candidates"]:
+            print("  (aucun)")
+            if analysis["page_size"] > 200000 and analysis["prices_in_page"] == 0:
+                print("\n  Page volumineuse mais AUCUN prix dans le texte : les prix sont")
+                print("  probablement chargés en JavaScript ou affichés en images (fréquent")
+                print("  chez Lidl/Aldi). Une page enregistrée n'est alors pas lisible.")
+                print("  → Pour ces enseignes sans drive, préférez la voie agrégateurs :")
+                print("      python -m src.cli run --no-drive --manual data/manual.json --collect")
+                print("    ou saisissez les prix relevés en magasin via : paste")
+            else:
+                print("  La page ne contient peut-être aucun résultat de recherche.")
+        print("\nCopiez ce tableau dans la conversation : il suffit à écrire le sélecteur.")
+        return 0
+
+    observations, report = observations_from_page(html, store, config, source_url=args.url)
+
+    if not report.get("store_city_seen", True):
+        print(f"⚠ « {store.city} » n'apparaît nulle part dans la page. Le magasin "
+              "actif de la session était peut-être un autre (chez Intermarché, se "
+              "connecter ailleurs bascule tout le compte). Vérifiez avant de vous "
+              "servir de ces prix.")
+    print(f"Page      : {args.file} ({report['page_size']} caractères)")
+    print(f"Méthode   : {report['method']}")
+    print(f"Produits  : {report['products_found']} lus, "
+          f"{report['matched_to_basket']} rattachés au panier, "
+          f"{report['ignored_not_in_basket']} hors panier")
+    if not observations:
+        print("\nRien d'exploitable. Deux causes possibles :")
+        print("  · la page enregistrée est la version « HTML seul » sans contenu ;")
+        print("  · le gabarit est inconnu — envoyez-moi le fichier, il servira de fixture.")
+        return 1
+
+    print()
+    for obs in observations:
+        print(f"  {obs.price_eur:>7.2f} €  {obs.pack_label():>14}  "
+              f"{config.item(obs.basket_item_id).label:<22} {obs.product_label[:55]}")
+
+    out = Path(args.out or (DATA_DIR / "manual.json"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    existing = []
+    if out.exists() and args.append:
+        existing = json.loads(out.read_text(encoding="utf-8"))
+    rows = existing + [obs.to_row() for obs in observations]
+    out.write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"\n{len(rows)} relevé(s) écrits dans {out}")
+    print(f"Ensuite : python -m src.cli run --no-drive --manual {out}")
+    print("(ajoutez --collect pour interroger en plus les agrégateurs)")
+    return 0
+
+
 def cmd_history(args: argparse.Namespace) -> int:
     config = get_config(args.config)
     ledger = Ledger(args.ledger)
@@ -195,6 +951,11 @@ def build_parser() -> argparse.ArgumentParser:
     run_parser.add_argument("--manual", help="fichier JSON de relevés saisis à la main")
     run_parser.add_argument("--pickup", help="date de retrait (YYYY-MM-DD) pour les avantages carte")
     run_parser.add_argument("--no-drive", action="store_true", help="sauter la vérification drive")
+    run_parser.add_argument(
+        "--collect",
+        action="store_true",
+        help="interroger aussi les agrégateurs quand --manual est fourni (long)",
+    )
     run_parser.add_argument("--offline", action="store_true", help="cache uniquement, aucun réseau")
     run_parser.add_argument("--headful", action="store_true", help="navigateur visible")
     run_parser.add_argument("--out", help="répertoire de sortie des rapports")
@@ -224,6 +985,132 @@ def build_parser() -> argparse.ArgumentParser:
     search.add_argument("--query", required=True)
     search.add_argument("--headful", action="store_true")
     search.set_defaults(func=cmd_search)
+
+    parse_page = sub.add_parser(
+        "parse-page",
+        help="lire une page de drive enregistrée depuis le navigateur (Ctrl+S)",
+    )
+    parse_page.add_argument("--store", help="magasin (optionnel avec --dir : détecté par page)")
+    parse_page.add_argument("--file", help="fichier .html enregistré")
+    parse_page.add_argument("--dir", help="dossier de pages .html à lire d'un coup, magasin auto-détecté")
+    parse_page.add_argument("--url", help="URL d'origine, pour la traçabilité")
+    parse_page.add_argument("--out", help="fichier de relevés (défaut : data/manual.json)")
+    parse_page.add_argument("--encoding", default="utf-8")
+    parse_page.add_argument(
+        "--diagnose",
+        action="store_true",
+        help="analyser la structure d'un gabarit inconnu (sortie courte, sans donnée perso)",
+    )
+    parse_page.add_argument(
+        "--append", action="store_true", help="ajouter aux relevés existants"
+    )
+    parse_page.set_defaults(func=cmd_parse_page)
+
+    open_tabs = sub.add_parser(
+        "open-tabs",
+        help="ouvrir les recherches de drive comme onglets dans le navigateur par défaut",
+    )
+    open_tabs.add_argument("--store", required=True)
+    open_tabs.add_argument("--items", nargs="*", help="articles précis (défaut : tout le drive)")
+    open_tabs.add_argument("--bulk", action="store_true", help="seulement les postes à stocker")
+    open_tabs.add_argument("--script", help="écrire un .bat/.sh rejouable au lieu d'ouvrir")
+    open_tabs.add_argument(
+        "--same-window",
+        action="store_true",
+        help="ajouter aux onglets courants au lieu d'ouvrir une nouvelle fenêtre",
+    )
+    open_tabs.add_argument(
+        "--delay",
+        type=float,
+        default=0,
+        help="secondes entre chaque onglet (rythme humain, évite l'anti-robot). Ex : 4",
+    )
+    open_tabs.set_defaults(func=cmd_open_tabs)
+
+    review = sub.add_parser(
+        "review",
+        help="lister les relevés douteux à vérifier sur la fiche produit (+ prompt extension)",
+    )
+    review.add_argument("--manual", required=True, help="fichier de relevés (data/manual.json)")
+    review.add_argument("--prompt", action="store_true",
+                        help="afficher un prompt prêt pour Claude dans Chrome")
+    review.set_defaults(func=cmd_review)
+
+    compare = sub.add_parser(
+        "compare",
+        help="test multi-enseignes : face-à-face par article + affectation, sur vos relevés",
+    )
+    compare.add_argument("--manual", required=True, help="fichier de relevés (data/manual.json)")
+    compare.set_defaults(func=cmd_compare)
+
+    menu = sub.add_parser(
+        "menu",
+        help="composer le menu de la semaine et la liste de courses par besoin",
+    )
+    menu.add_argument("--days", type=int, default=7, help="nombre de dîners (défaut 7)")
+    menu.add_argument("--servings", type=int, help="nombre de parts (défaut : recipes.yaml)")
+    menu.add_argument("--fish-max", dest="fish_max", type=int, default=2,
+                      help="poisson au plus N fois (défaut 2)")
+    menu.add_argument("--seed", type=int, help="graine pour reproduire un tirage")
+    menu.add_argument("--repeat-ok", action="store_true",
+                      help="autoriser les recettes des dernières semaines")
+    menu.add_argument("--pick", nargs="+", metavar="ID",
+                      help="verrouiller un menu décidé (ids séparés par des virgules)")
+    menu.add_argument("--list", action="store_true", help="lister les recettes disponibles")
+    menu.add_argument("--save", action="store_true",
+                      help="mémoriser la semaine (rotation anti-répétition)")
+    menu.add_argument("--cook", action="store_true",
+                      help="décompter ces repas du stock (les ingrédients sont consommés)")
+    menu.add_argument("--ignore-stock", action="store_true",
+                      help="ne pas déduire le garde-manger (besoin brut)")
+    menu.add_argument("--serve", action="store_true",
+                      help="servir la page « Menu de la semaine » (validation d'un clic)")
+    menu.add_argument("--host", default="0.0.0.0",
+                      help="interface d'écoute du serveur (défaut : 0.0.0.0, accessible sur le wifi)")
+    menu.add_argument("--port", type=int, default=8000, help="port du serveur (défaut 8000)")
+    menu.set_defaults(func=cmd_menu)
+
+    stock = sub.add_parser("stock", help="inventaire du garde-manger (acheté − consommé)")
+    stock.add_argument("--add", nargs="+", metavar="ITEM:QTE[:UNITE]",
+                       help="ajouter au stock, ex : riz:2:kg conserve_poisson:6:boite")
+    stock.add_argument("--remove", nargs="+", metavar="ITEM:QTE[:UNITE]",
+                       help="retirer du stock (consommation manuelle)")
+    stock.add_argument("--reset", action="store_true", help="remettre le stock à zéro")
+    stock.set_defaults(func=cmd_stock)
+
+    paste = sub.add_parser(
+        "paste",
+        help="importer des relevés JSON depuis le presse-papiers (réponse de Claude dans Chrome)",
+    )
+    paste.add_argument("--file", help="lire depuis un fichier plutôt que le presse-papiers")
+    paste.add_argument("--stdin", action="store_true", help="lire depuis l'entrée standard")
+    paste.add_argument("--out", help="fichier de relevés (défaut : data/manual.json)")
+    paste.add_argument("--replace", action="store_true",
+                       help="remplacer le fichier au lieu d'ajouter")
+    paste.set_defaults(func=cmd_paste)
+
+    shortlist_parser = sub.add_parser(
+        "shortlist",
+        help="interroger les agrégateurs et lister quoi vérifier en drive, avec les URL",
+    )
+    shortlist_parser.add_argument("--items", nargs="*", help="limiter à ces articles")
+    shortlist_parser.add_argument("--offline", action="store_true")
+    shortlist_parser.set_defaults(func=cmd_shortlist)
+
+    capture = sub.add_parser(
+        "capture",
+        help="enregistrer ce qu'un drive renvoie (HTML + XHR) pour caler les sélecteurs",
+    )
+    capture.add_argument("--store", required=True)
+    capture.add_argument("--query", required=True)
+    capture.add_argument("--out", help="répertoire de sortie (défaut : data/captures)")
+    capture.add_argument("--cart", action="store_true", help="capturer aussi la page panier")
+    capture.add_argument(
+        "--headless",
+        action="store_true",
+        help="sans fenêtre (déconseillé : on ne voit pas si la session a expiré)",
+    )
+    capture.set_defaults(func=cmd_capture)
 
     history = sub.add_parser("history", help="historique et tendance d'un article")
     history.add_argument("--item", required=True)

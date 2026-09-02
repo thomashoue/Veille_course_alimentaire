@@ -49,6 +49,8 @@ stores:
     detour_km: 1
     format: super
     has_drive: true
+    min_order_eur: 30    # affiché sur coursesu.com (2026-08-31)
+    # slug probable : /drive-superu-breteil — à confirmer dans le navigateur
     drive_base_url: https://www.coursesu.com
     search_url_template: "https://www.coursesu.com/recherche?q={q}"
     cart_url_template: "https://www.coursesu.com/panier"
@@ -64,9 +66,23 @@ stores:
     detour_km: 2
     format: hyper
     has_drive: true
+    min_order_eur: 30    # affiché sur coursesu.com (2026-08-31)
     drive_base_url: https://www.coursesu.com
     search_url_template: "https://www.coursesu.com/recherche?q={q}"
     cart_url_template: "https://www.coursesu.com/panier"
+
+  - id: ecomiam_pleumeleuc
+    banner: ecomiam
+    name: Ecomiam Pleumeleuc
+    city: Pleumeleuc
+    postcode: "35137"
+    corridor: east
+    assignee: charlotte
+    distance_km: 11
+    detour_km: 0
+    format: discount            # spécialiste surgelés (poisson, viande)
+    has_drive: false            # click & collect existant, gabarit non calé
+    # drive_base_url: https://www.ecomiam.com  # à activer quand le lecteur sera prêt
 
   - id: action_pace
     banner: action
@@ -124,18 +140,21 @@ stores:
     drive_base_url: https://www.intermarche.com
     search_url_template: "https://www.intermarche.com/recherche/{q}"
 
-  - id: superu_yffiniac
+  # URL de drive confirmée par Thomas le 2026-08-31 : chaque magasin U a la
+  # sienne, sur le modèle coursesu.com/drive-<format>-<ville>.
+  - id: hyperu_yffiniac
     banner: u
-    name: Super U Yffiniac
+    name: Hyper U Yffiniac
     city: Yffiniac
     postcode: "22120"
     corridor: west
     assignee: thomas
     distance_km: 62
     detour_km: 3
-    format: super
+    format: hyper
     has_drive: true
-    drive_base_url: https://www.coursesu.com
+    min_order_eur: 30    # affiché sur coursesu.com (2026-08-31)
+    drive_base_url: https://www.coursesu.com/drive-hyperu-yffiniac
     search_url_template: "https://www.coursesu.com/recherche?q={q}"
     cart_url_template: "https://www.coursesu.com/panier"
 
@@ -150,6 +169,10 @@ stores:
     detour_km: 3
     format: discount
     has_drive: false
+    # Catalogue Lidl = FLYER (images de pages scannées), aucun prix en texte :
+    # illisible par parse-page. À lire par Claude dans Chrome (vision) puis
+    # paste, ou via les agrégateurs (run --collect). URL = landing du catalogue.
+    offers_url: https://www.lidl.fr/l/catalogue-de-la-semaine
 
   - id: aldi_tregueux
     banner: aldi
@@ -161,7 +184,11 @@ stores:
     distance_km: 66
     detour_km: 3
     format: discount
-    has_drive: false
+    has_drive: false            # pas de retrait en ligne, mais site cherchable
+    # Aldi a une VRAIE recherche produit (contrairement au flyer Lidl) : les
+    # prix s'affichent en texte, donc lisibles par parse-page une fois le
+    # gabarit calé. URL confirmée par l'utilisateur.
+    search_url_template: "https://www.aldi.fr/recherche.html?query={q}"
 
   - id: netto_ploufragan
     banner: netto

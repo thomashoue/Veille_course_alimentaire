@@ -14,7 +14,7 @@ from datetime import date
 
 from . import units
 from .config import Config
-from .models import MECHANIC_SECOND_DISCOUNTS, BasketItem, PriceObservation
+from .models import BasketItem, PriceObservation, second_discount
 
 
 # --------------------------------------------------------------------------- #
@@ -90,7 +90,7 @@ def total_for_required_qty(price: float, mechanic: str | None) -> float:
     if not mechanic:
         return price
     if mechanic.startswith("second_"):
-        discount = MECHANIC_SECOND_DISCOUNTS.get(mechanic)
+        discount = second_discount(mechanic)
         if discount is None:
             return price
         return price + price * (1.0 - discount)
