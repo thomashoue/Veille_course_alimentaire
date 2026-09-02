@@ -169,6 +169,9 @@ stores:
     detour_km: 3
     format: discount
     has_drive: false
+    # Pas de recherche produit : page des offres de la semaine (à vérifier /
+    # ajuster selon la page qui affiche vraiment les prix chez vous).
+    offers_url: https://www.lidl.fr/c/nos-offres/s10007736
 
   - id: aldi_tregueux
     banner: aldi
@@ -181,6 +184,7 @@ stores:
     detour_km: 3
     format: discount
     has_drive: false
+    offers_url: https://www.aldi-marche.fr/nos-offres/
 
   - id: netto_ploufragan
     banner: netto

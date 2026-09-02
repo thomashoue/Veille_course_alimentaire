@@ -100,7 +100,16 @@ SingleFile sait tout enregistrer seul, ce qui supprime le dernier geste manuel :
    (les drives sont lents : 1 s ne suffit pas à charger les prix).
 2. Cocher « sauvegarder la page avec SingleFile Companion » et installer le
    Companion : il permet d'écrire ailleurs que dans Téléchargements — pointez-le
-   sur un dossier `captures`.
+   sur un dossier `captures`. Installation (voir
+   https://github.com/gildas-lormeau/single-file-companion) :
+   - installer Node.js si absent ;
+   - récupérer le dépôt (bouton « Code » → Download ZIP, ou `git clone`) ;
+   - lancer le script d'installation fourni pour votre système (il enregistre
+     l'hôte de messagerie native que l'extension appelle) ;
+   - dans les options SingleFile, régler le dossier de destination du Companion
+     sur le `captures` de ce projet (chemin absolu).
+   Une fois en place, chaque page auto-sauvegardée atterrit directement dans
+   `captures`, sans passer par Téléchargements.
 3. Le vendredi : `python -m src.cli open-tabs --store … --bulk` (une fenêtre par
    enseigne). Chaque page s'auto-enregistre dans `captures` au chargement.
 4. Un seul dossier, magasins mêlés : l'auto-détection s'en charge —

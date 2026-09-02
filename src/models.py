@@ -33,6 +33,7 @@ class Store:
     drive_base_url: str | None = None
     search_url_template: str | None = None
     cart_url_template: str | None = None
+    offers_url: str | None = None   # page « offres de la semaine » (enseignes sans recherche produit)
     format: str = "super"
     min_order_eur: float | None = None   # minimum de commande du drive
     excluded: bool = False

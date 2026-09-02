@@ -302,27 +302,33 @@ def cmd_open_tabs(args: argparse.Namespace) -> int:
         ]
 
     urls: list[tuple[str, str]] = []
-    for item in items:
-        query = item.keywords[0] if item.keywords else item.label
-        url = store.search_url(query)
-        if url:
-            urls.append((item.label, url))
+    if store.search_url_template:
+        # Drive : une recherche par article.
+        for item in items:
+            query = item.keywords[0] if item.keywords else item.label
+            url = store.search_url(query)
+            if url:
+                urls.append((item.label, url))
+    elif store.offers_url:
+        # Enseigne sans recherche produit (Lidl, Aldi…) : la page des offres.
+        urls.append(("Offres de la semaine", store.offers_url))
 
     if not urls:
-        print(f"Aucune URL de recherche pour {store.name} (drive non configuré ?).")
+        print(f"Ni recherche ni page d'offres pour {store.name}. "
+              "Ajoutez search_url_template ou offers_url dans config/stores.yaml.")
         return 1
 
     if args.script:
         path = Path(args.script)
         if sys.platform == "win32":
-            lines = ["@echo off", f"rem Recherches drive — {store.name}",
+            lines = ["@echo off", f"rem Recherches / offres — {store.name}",
                      "rem Nouvelle fenêtre du navigateur par défaut, puis onglets"]
             # start "" <url> ouvre dans le navigateur par défaut ; on force une
             # fenêtre neuve via le protocole en ouvrant le premier seul.
             lines += [f'start "" "{url}"' for _, url in urls]
         else:
             opener = "open" if sys.platform == "darwin" else "xdg-open"
-            lines = ["#!/bin/sh", f"# Recherches drive — {store.name}"]
+            lines = ["#!/bin/sh", f"# Recherches / offres — {store.name}"]
             lines += [f'{opener} "{url}"' for _, url in urls]
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         print(f"{len(urls)} recherche(s) écrites dans {path} — lancez-le quand vous voulez.")

@@ -17,14 +17,16 @@ PY="python"; command -v python >/dev/null 2>&1 || PY="python3"
 CAPTURES="${CAPTURES:-captures}"
 mkdir -p "$CAPTURES"
 
-# Enseignes avec drive à capturer (une fenêtre chacune, SANS pause entre elles).
-DRIVE_STORES=(leclerc_pleumeleuc intermarche_montauban hyperu_yffiniac)
+# Enseignes à ouvrir (une fenêtre chacune, SANS pause entre elles). Les trois
+# premières ont un drive (recherche par article) ; Lidl et Aldi n'ont pas de
+# recherche produit — leur page « offres de la semaine » s'ouvre en un onglet.
+STORES=(leclerc_pleumeleuc intermarche_montauban hyperu_yffiniac lidl_langueux aldi_tregueux)
 
 echo "=== Veille courses — capture du vendredi ==="
 echo "Les pages s'enregistreront seules dans : $CAPTURES/"
 echo
 
-for store in "${DRIVE_STORES[@]}"; do
+for store in "${STORES[@]}"; do
   echo "--- $store : ouverture des recherches ---"
   "$PY" -m src.cli open-tabs --store "$store" --bulk
 done

@@ -16,7 +16,7 @@ echo === Veille courses - capture du vendredi ===
 echo Les pages s'enregistreront seules dans : %CAPTURES%\
 echo.
 
-for %%S in (leclerc_pleumeleuc intermarche_montauban hyperu_yffiniac) do (
+for %%S in (leclerc_pleumeleuc intermarche_montauban hyperu_yffiniac lidl_langueux aldi_tregueux) do (
   echo --- %%S : ouverture des recherches ---
   python -m src.cli open-tabs --store %%S --bulk
 )

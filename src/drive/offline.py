@@ -376,6 +376,9 @@ _DRIVE_DOMAINS = {
     "leclercdrive.fr": "leclerc",
     "coursesu.com": "u",
     "intermarche.com": "intermarche",
+    "lidl.fr": "lidl",
+    "aldi-marche.fr": "aldi",
+    "aldi.fr": "aldi",
 }
 # Repli sur des marqueurs de gabarit si le domaine manque.
 _GABARIT_MARKERS = {
@@ -397,13 +400,15 @@ def detect_store(html: str, config: Config) -> str | None:
     # URL de drive du référentiel, la PLUS SPÉCIFIQUE d'abord : l'URL complète
     # d'Yffiniac (/drive-hyperu-yffiniac) doit l'emporter sur le coursesu.com
     # générique d'un autre magasin U.
-    by_specificity = sorted(
-        (s for s in config.drive_stores() if s.drive_base_url),
-        key=lambda s: len(s.drive_base_url or ""),
-        reverse=True,
-    )
-    for store in by_specificity:
-        if store.drive_base_url.lower() in low:
+    # Tous les magasins autorisés (drive ET liste papier comme Lidl/Aldi), URL
+    # la plus spécifique d'abord.
+    stores = config.allowed_stores()
+    for store in sorted(stores, key=lambda s: len(s.drive_base_url or ""), reverse=True):
+        base = (store.drive_base_url or "").lower()
+        offers = (store.offers_url or "").lower()
+        if base and base in low:
+            return store.id
+        if offers and offers.split("?")[0] in low:
             return store.id
 
     banner = None
@@ -419,7 +424,7 @@ def detect_store(html: str, config: Config) -> str | None:
     if banner is None:
         return None
 
-    candidates = [s for s in config.drive_stores() if s.banner == banner]
+    candidates = [s for s in config.allowed_stores() if s.banner == banner]
     if len(candidates) == 1:
         return candidates[0].id
     if candidates:

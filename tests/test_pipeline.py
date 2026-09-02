@@ -419,3 +419,27 @@ class TestOpenTabsFenetre:
                   "--items", "lait_demi_ecreme", "--same-window"])
         assert "onglets courants" in capsys.readouterr().out
         assert opened
+
+
+class TestOpenTabsOffres:
+    """Lidl / Aldi : pas de recherche produit, mais une page d'offres."""
+
+    def test_lidl_ouvre_sa_page_offres(self, config, tmp_path, monkeypatch):
+        import sys as sysmod
+
+        from src.cli import main
+
+        monkeypatch.setattr(sysmod, "platform", "linux")
+        script = tmp_path / "lidl.sh"
+        assert main(["open-tabs", "--store", "lidl_langueux", "--script", str(script)]) == 0
+        assert "lidl.fr" in script.read_text(encoding="utf-8")
+
+    def test_magasin_sans_offres_ni_recherche_echoue(self, config, tmp_path, monkeypatch):
+        import sys as sysmod
+
+        from src.cli import main
+
+        monkeypatch.setattr(sysmod, "platform", "linux")
+        # Ecomiam : ni search_url_template ni offers_url pour l'instant.
+        code = main(["open-tabs", "--store", "ecomiam_pleumeleuc", "--script", str(tmp_path / "x.sh")])
+        assert code == 1
