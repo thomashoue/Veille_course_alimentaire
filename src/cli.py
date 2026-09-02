@@ -690,6 +690,18 @@ def cmd_parse_page(args: argparse.Namespace) -> int:
         for candidate in analysis["candidates"]:
             print(f"  {candidate['count']:>5}  {candidate['tag']:<10} "
                   f"{candidate['class']:<34} {candidate['sample'][:70]}")
+        from .drive.offline import json_shape_report
+        shapes = json_shape_report(html) if analysis["embedded_json_markers"] else []
+        if shapes:
+            print("\nJSON embarqué — formes d'objets les plus fréquentes (clés) :\n")
+            for sh in shapes:
+                print(f"  x{sh['count']:<4} clés : {', '.join(sh['keys'])}")
+                interesting = {k: v for k, v in sh["sample"].items()
+                               if any(t in k.lower() for t in ('nam','nom','label','libel','titl','price','prix','amount','montant'))}
+                if interesting:
+                    print(f"        ex : {interesting}")
+            print("\n  Copiez ce bloc : les noms de champs suffisent à lire le catalogue.")
+            return 0
         if not analysis["candidates"]:
             print("  (aucun)")
             if analysis["page_size"] > 200000 and analysis["prices_in_page"] == 0:

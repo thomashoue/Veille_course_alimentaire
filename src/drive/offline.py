@@ -565,7 +565,7 @@ def observations_from_page(
         # magasin actif de TOUT le compte. Si la ville attendue n'apparaît
         # nulle part dans la page, les prix sont peut-être ceux d'un autre
         # magasin — à vérifier avant de s'en servir.
-        "store_city_seen": (_alnum(store.city) in page_alnum) if store.city else True,
+        "store_city_seen": True if not store.drive_base_url else ((_alnum(store.city) in page_alnum) if store.city else True),
         "products_found": len(products),
         "matched_to_basket": len(observations),
         "ignored_not_in_basket": unmatched,
@@ -579,6 +579,46 @@ def observations_from_page(
 # --------------------------------------------------------------------------- #
 # Diagnostic de gabarit
 # --------------------------------------------------------------------------- #
+def json_shape_report(html: str, top: int = 8) -> list[dict]:
+    """Révèle la FORME des objets d'un JSON embarqué (Next.js/Nuxt).
+
+    Recense les dicts qui ressemblent à des produits (une chaîne + un nombre ou
+    un prix), groupés par jeu de clés, avec un échantillon. Sert à découvrir les
+    noms de champs réels d'un site comme Aldi sans coller tout le __NEXT_DATA__.
+    """
+    from collections import Counter
+
+    shapes: Counter = Counter()
+    samples: dict = {}
+    for data in _json_blobs(html):
+        stack = [data]
+        while stack:
+            node = stack.pop()
+            if isinstance(node, list):
+                stack.extend(node)
+                continue
+            if not isinstance(node, dict):
+                continue
+            stack.extend(v for v in node.values() if isinstance(v, (dict, list)))
+            has_str = any(isinstance(v, str) and v.strip() for v in node.values())
+            has_num = any(
+                isinstance(v, (int, float)) and not isinstance(v, bool) for v in node.values()
+            ) or any(isinstance(v, dict) for v in node.values())
+            if len(node) < 3 or not (has_str and has_num):
+                continue
+            key = tuple(sorted(node.keys()))[:20]
+            shapes[key] += 1
+            if key not in samples:
+                samples[key] = {
+                    k: (str(v)[:40] if not isinstance(v, (dict, list)) else type(v).__name__)
+                    for k, v in list(node.items())[:12]
+                }
+    out = []
+    for keys, count in shapes.most_common(top):
+        out.append({"count": count, "keys": list(keys), "sample": samples.get(keys, {})})
+    return out
+
+
 def analyze_page(html: str, top: int = 12) -> dict:
     """Découvre le gabarit d'une page inconnue.
 
