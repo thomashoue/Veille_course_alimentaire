@@ -110,8 +110,12 @@ SingleFile sait tout enregistrer seul, ce qui supprime le dernier geste manuel :
      sur le `captures` de ce projet (chemin absolu).
    Une fois en place, chaque page auto-sauvegardée atterrit directement dans
    `captures`, sans passer par Téléchargements.
-3. Le vendredi : `python -m src.cli open-tabs --store … --bulk` (une fenêtre par
-   enseigne). Chaque page s'auto-enregistre dans `captures` au chargement.
+3. Le vendredi : `python -m src.cli open-tabs --store … --bulk`. IMPORTANT :
+   avec beaucoup d'onglets, l'auto-save « après chargement » RATE les onglets
+   en arrière-plan (Chrome les gèle et ils ne déclenchent jamais leur save).
+   Utilisez plutôt le bouton SingleFile **« Enregistrer tous les onglets »**
+   (clic droit sur l'icône) : il réveille chaque onglet et les sauve tous dans
+   `captures`. L'auto-save reste pratique pour une page unique.
 4. Un seul dossier, magasins mêlés : l'auto-détection s'en charge —
 
 ```

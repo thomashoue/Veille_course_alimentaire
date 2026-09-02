@@ -33,8 +33,10 @@ for %%S in (leclerc_pleumeleuc intermarche_montauban hyperu_yffiniac lidl_langue
 )
 
 echo.
-echo ^>^> Laissez SingleFile enregistrer toutes les pages (delai 3-5 s chacune).
-echo    Appuyez sur une touche quand tout est enregistre dans %CAPTURES%\
+echo ^>^> Dans SingleFile, cliquez "ENREGISTRER TOUS LES ONGLETS" (clic droit
+echo    sur l'icone de l'extension) : l'auto-save seul rate les onglets en
+echo    arriere-plan que Chrome gele ; ce bouton les reveille et les sauve tous.
+echo    Appuyez sur une touche quand tous les onglets sont enregistres dans %CAPTURES%\
 pause
 
 echo === Lecture (magasin auto-detecte par page) ===

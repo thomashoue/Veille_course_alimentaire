@@ -37,8 +37,10 @@ for store in "${STORES[@]}"; do
 done
 
 echo
-echo ">> Laissez SingleFile enregistrer toutes les pages (délai 3–5 s chacune)."
-read -r -p "   Appuyez sur Entrée quand tout est enregistré dans $CAPTURES/ … " _
+echo ">> Dans SingleFile, cliquez « ENREGISTRER TOUS LES ONGLETS » (clic droit"
+echo "   sur l'icône de l'extension). L'auto-save seul rate les onglets en"
+echo "   arrière-plan, que Chrome gèle : ce bouton les réveille et les sauve tous."
+read -r -p "   Appuyez sur Entrée quand tous les onglets sont enregistrés dans $CAPTURES/ … " _
 echo
 
 echo "=== Lecture (magasin auto-détecté par page) ==="
