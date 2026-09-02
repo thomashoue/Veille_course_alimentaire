@@ -169,9 +169,10 @@ stores:
     detour_km: 3
     format: discount
     has_drive: false
-    # Pas de recherche produit : page des offres de la semaine (à vérifier /
-    # ajuster selon la page qui affiche vraiment les prix chez vous).
-    offers_url: https://www.lidl.fr/c/nos-offres/s10007736
+    # Catalogue Lidl = FLYER (images de pages scannées), aucun prix en texte :
+    # illisible par parse-page. À lire par Claude dans Chrome (vision) puis
+    # paste, ou via les agrégateurs (run --collect). URL = landing du catalogue.
+    offers_url: https://www.lidl.fr/l/catalogue-de-la-semaine
 
   - id: aldi_tregueux
     banner: aldi

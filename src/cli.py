@@ -672,7 +672,16 @@ def cmd_parse_page(args: argparse.Namespace) -> int:
             print(f"  {candidate['count']:>5}  {candidate['tag']:<10} "
                   f"{candidate['class']:<34} {candidate['sample'][:70]}")
         if not analysis["candidates"]:
-            print("  (aucun) — la page ne contient peut-être aucun résultat de recherche")
+            print("  (aucun)")
+            if analysis["page_size"] > 200000 and analysis["prices_in_page"] == 0:
+                print("\n  Page volumineuse mais AUCUN prix dans le texte : les prix sont")
+                print("  probablement chargés en JavaScript ou affichés en images (fréquent")
+                print("  chez Lidl/Aldi). Une page enregistrée n'est alors pas lisible.")
+                print("  → Pour ces enseignes sans drive, préférez la voie agrégateurs :")
+                print("      python -m src.cli run --no-drive --manual data/manual.json --collect")
+                print("    ou saisissez les prix relevés en magasin via : paste")
+            else:
+                print("  La page ne contient peut-être aucun résultat de recherche.")
         print("\nCopiez ce tableau dans la conversation : il suffit à écrire le sélecteur.")
         return 0
 

@@ -124,3 +124,27 @@ Hyper U) à son contenu et la range toute seule. Plus de tri, plus de copier-col
 
 Sans le Companion, les pages tombent dans Téléchargements — ça marche pareil :
 pointez simplement `parse-page --dir` sur votre dossier Téléchargements.
+
+
+## Lidl et Aldi : le flyer se lit à l'œil
+
+Les catalogues Lidl et Aldi sont des FLYERS — des images de pages scannées
+(URL en `.../view/flyer/...`). Zéro texte, donc zéro prix lisible par
+parse-page : le HTML est vide de données.
+
+C'est le seul cas où la vision de Claude dans Chrome apporte ce que le code ne
+peut pas. Ouvrez le flyer dans le navigateur et donnez ce prompt à l'extension :
+
+> Voici le catalogue Lidl de la semaine en images. Relève les produits qui
+> correspondent à mon panier (lait, légumineuses, conserves de poisson, café,
+> lessive, papier toilette, litière…). Pour chacun, SANS CALCULER : libellé
+> exact, prix affiché, grammage, mécanique promo éventuelle. Rends un tableau
+> JSON : store_id "lidl_langueux" (ou "aldi_tregueux"), basket_item_id,
+> product_label, price_eur, pack_size, pack_unit, source "catalogue".
+
+Puis `python -m src.cli paste`. La normalisation, les seuils et l'affectation
+s'appliquent ensuite comme pour n'importe quel relevé — ces prix sortiront en
+liste papier (Lidl et Aldi n'ont pas de drive).
+
+Alternative sans extension : les agrégateurs, via `run --collect`, qui récupèrent
+les catalogues Lidl/Aldi sous forme structurée quand ils sont disponibles.
