@@ -23,9 +23,13 @@ echo === Veille courses - capture du vendredi ===
 echo Les pages s'enregistreront seules dans : %CAPTURES%\
 echo.
 
+REM Tout dans UNE fenetre : le 1er magasin l'ouvre, les suivants s'y ajoutent.
+REM Un onglet toutes les 6 s, le temps que SingleFile enregistre completement.
+set WIN=
 for %%S in (leclerc_pleumeleuc intermarche_montauban hyperu_yffiniac lidl_langueux aldi_tregueux) do (
   echo --- %%S : ouverture des recherches ---
-  python -m src.cli open-tabs --store %%S --bulk --delay 4
+  python -m src.cli open-tabs --store %%S --bulk --delay 6 !WIN!
+  set WIN=--same-window
 )
 
 echo.

@@ -347,18 +347,17 @@ def cmd_open_tabs(args: argparse.Namespace) -> int:
         # d'un coup déclenche l'anti-robot d'Intermarché (« vitesse surhumaine »).
         import time
 
-        print(f"\nOuverture espacée de {delay:g}s ({store.name})…")
+        import subprocess
+
+        cible = "onglets courants" if same_window else "nouvelle fenêtre"
+        print(f"\nOuverture espacée de {delay:g}s ({store.name}) — {cible}…")
         for i, url in enumerate(only_urls):
-            if chromium and i == 0:
-                import subprocess
-
-                subprocess.Popen([chromium, "--new-window", url])
-            elif chromium:
-                import subprocess
-
-                subprocess.Popen([chromium, url])          # onglet dans la fenêtre
+            new_window = (i == 0 and not same_window)
+            if chromium:
+                cmd = [chromium, "--new-window", url] if new_window else [chromium, url]
+                subprocess.Popen(cmd)
             else:
-                webbrowser.open(url, new=1 if i == 0 else 2, autoraise=(i == 0))
+                webbrowser.open(url, new=1 if new_window else 2, autoraise=new_window)
             if i < len(only_urls) - 1:
                 time.sleep(delay)
     elif chromium:

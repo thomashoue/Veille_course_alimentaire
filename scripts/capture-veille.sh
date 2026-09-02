@@ -26,9 +26,14 @@ echo "=== Veille courses — capture du vendredi ==="
 echo "Les pages s'enregistreront seules dans : $CAPTURES/"
 echo
 
+# Tout dans UNE fenêtre : le premier magasin l'ouvre, les suivants ajoutent
+# leurs onglets dedans. Un onglet toutes les 6 s pour laisser SingleFile
+# enregistrer chaque page complètement avant la suivante.
+first=1
 for store in "${STORES[@]}"; do
+  if [ "$first" = 1 ]; then win=""; first=0; else win="--same-window"; fi
   echo "--- $store : ouverture des recherches ---"
-  "$PY" -m src.cli open-tabs --store "$store" --bulk --delay 4
+  "$PY" -m src.cli open-tabs --store "$store" --bulk --delay 6 $win
 done
 
 echo
