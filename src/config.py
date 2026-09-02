@@ -14,7 +14,7 @@ from typing import Any
 
 import yaml
 
-from .models import BasketItem, Store
+from .models import BasketItem, Ingredient, Recipe, Store
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = Path(os.environ.get("VEILLE_CONFIG_DIR", ROOT / "config"))
@@ -37,6 +37,8 @@ class Config:
     params: dict[str, Any]
     sources: dict[str, Any]
     out_of_scope_stores: list[str] = field(default_factory=list)
+    recipes: dict[str, Recipe] = field(default_factory=dict)
+    servings_base: int = 4
 
     # -- magasins ----------------------------------------------------------- #
     def store(self, store_id: str) -> Store:
@@ -109,6 +111,9 @@ class Config:
     def param(self, name: str, default: Any = None) -> Any:
         return self.params.get(name, default)
 
+    def recipe(self, recipe_id: str) -> Recipe:
+        return self.recipes[recipe_id]
+
 
 # Rattachement par mot entier, insensible aux accents. Un mot-clé multi-mot
 # (« steak haché ») est cherché comme une expression, bornée aux deux bouts.
@@ -150,6 +155,8 @@ def load_config(config_dir: Path | str | None = None) -> Config:
     basket_raw = _load_yaml(directory / "basket.yaml")
     thresholds_raw = _load_yaml(directory / "thresholds.yaml")
     sources_raw = _load_yaml(directory / "sources.yaml")
+    recipes_path = directory / "recipes.yaml"
+    recipes_raw = _load_yaml(recipes_path) if recipes_path.exists() else {}
 
     stores = {s["id"]: _store_from_dict(s) for s in stores_raw.get("stores", [])}
     excluded = {b.lower() for b in stores_raw.get("excluded_banners", [])}
@@ -159,6 +166,16 @@ def load_config(config_dir: Path | str | None = None) -> Config:
 
     items = {i["id"]: _item_from_dict(i) for i in basket_raw.get("items", [])}
 
+    recipes = {}
+    for raw in recipes_raw.get("recipes", []):
+        ingredients = [Ingredient(**{k: v for k, v in ing.items()
+                                     if k in Ingredient.__dataclass_fields__})
+                       for ing in raw.get("ingredients", [])]
+        recipes[raw["id"]] = Recipe(
+            id=raw["id"], name=raw["name"], tags=raw.get("tags", []),
+            proteine=raw.get("proteine", ""), ingredients=ingredients,
+        )
+
     return Config(
         stores=stores,
         excluded_banners=excluded,
@@ -167,6 +184,8 @@ def load_config(config_dir: Path | str | None = None) -> Config:
         params=thresholds_raw.get("params", {}),
         sources=sources_raw,
         out_of_scope_stores=basket_raw.get("out_of_scope_stores", []),
+        recipes=recipes,
+        servings_base=int(recipes_raw.get("servings_base", 4)),
     )
 
 

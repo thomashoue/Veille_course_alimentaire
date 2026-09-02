@@ -78,6 +78,30 @@ class BasketItem:
 
 
 # --------------------------------------------------------------------------- #
+# Recettes (besoin → liste de courses)
+# --------------------------------------------------------------------------- #
+@dataclass
+class Ingredient:
+    label: str
+    qty: float                       # pour servings_base parts
+    unit: str
+    basket_item: str | None = None   # relié à un article du panier si possible
+    category: str = ""               # sinon : 'fl', 'epicerie', 'cremerie', 'poisson'…
+
+
+@dataclass
+class Recipe:
+    id: str
+    name: str
+    tags: list[str] = field(default_factory=list)
+    proteine: str = ""               # legumineuses | oeufs | fromage | poisson
+    ingredients: list[Ingredient] = field(default_factory=list)
+
+    def has_tag(self, tag: str) -> bool:
+        return tag in self.tags
+
+
+# --------------------------------------------------------------------------- #
 # Relevé de prix
 # --------------------------------------------------------------------------- #
 class Source(str, Enum):

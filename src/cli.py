@@ -608,6 +608,52 @@ def cmd_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_menu(args: argparse.Namespace) -> int:
+    """Menu de la semaine + liste de courses par besoin."""
+    from .menu import plan_week, record_week, shopping_list
+
+    config = get_config(args.config)
+    if not config.recipes:
+        print("Aucune recette : config/recipes.yaml manquant.")
+        return 1
+
+    week = plan_week(
+        config,
+        n=args.days,
+        fish_max=args.fish_max,
+        seed=args.seed,
+        avoid_recent=not args.repeat_ok,
+    )
+    menu = shopping_list(config, week, servings=args.servings)
+
+    print(f"=== Menu de la semaine ({args.servings or config.servings_base} parts) ===\n")
+    for jour, recipe in menu.week:
+        tags = f"  ({', '.join(recipe.tags)})" if recipe.tags else ""
+        print(f"  {jour:<10} {recipe.name}{tags}")
+
+    print("\n=== À acheter au drive (comparé sur la veille prix) ===")
+    for line in menu.to_buy:
+        item = config.items.get(line.basket_item)
+        cat = f"[{item.category}] " if item else ""
+        print(f"  {cat}{line.label} — {line.qty:g} {line.unit}")
+
+    if menu.pantry:
+        print("\n=== Épicerie (hors panier suivi) ===")
+        for line in menu.pantry:
+            print(f"  {line.label} — {line.qty:g} {line.unit}")
+
+    if menu.fresh:
+        print("\n=== Frais : marché / Grand Frais / Ecomiam (hors veille prix) ===")
+        for line in menu.fresh:
+            print(f"  {line.label} — {line.qty:g} {line.unit}")
+
+    if args.save:
+        record_week([r.id for _, r in menu.week])
+        print("\nSemaine enregistrée (évitera de refaire ces plats la prochaine fois).")
+    print("\nRégénérer une autre semaine : ajoutez --seed <n> ou relancez.")
+    return 0
+
+
 def cmd_shortlist(args: argparse.Namespace) -> int:
     """Interroge les agrégateurs et dit QUOI vérifier, et OÙ.
 
@@ -920,6 +966,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     compare.add_argument("--manual", required=True, help="fichier de relevés (data/manual.json)")
     compare.set_defaults(func=cmd_compare)
+
+    menu = sub.add_parser(
+        "menu",
+        help="composer le menu de la semaine et la liste de courses par besoin",
+    )
+    menu.add_argument("--days", type=int, default=7, help="nombre de dîners (défaut 7)")
+    menu.add_argument("--servings", type=int, help="nombre de parts (défaut : recipes.yaml)")
+    menu.add_argument("--fish-max", dest="fish_max", type=int, default=2,
+                      help="poisson au plus N fois (défaut 2)")
+    menu.add_argument("--seed", type=int, help="graine pour reproduire un tirage")
+    menu.add_argument("--repeat-ok", action="store_true",
+                      help="autoriser les recettes des dernières semaines")
+    menu.add_argument("--save", action="store_true",
+                      help="mémoriser la semaine (rotation anti-répétition)")
+    menu.set_defaults(func=cmd_menu)
 
     paste = sub.add_parser(
         "paste",

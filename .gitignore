@@ -14,3 +14,4 @@ captures/
 pages_*/
 *.html
 !tests/fixtures/*.html
+data/menu_history.json
