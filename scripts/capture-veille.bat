@@ -12,6 +12,13 @@ cd /d "%~dp0.."
 if "%CAPTURES%"=="" set CAPTURES=captures
 if not exist "%CAPTURES%" mkdir "%CAPTURES%"
 
+REM Vider les pages de la semaine precedente (sinon d'anciens prix se melangent).
+if exist "%CAPTURES%\*.html" (
+  echo Nettoyage des anciennes pages de %CAPTURES%\
+  del /q "%CAPTURES%\*.html"
+)
+if exist "%CAPTURES%\*.htm" del /q "%CAPTURES%\*.htm"
+
 echo === Veille courses - capture du vendredi ===
 echo Les pages s'enregistreront seules dans : %CAPTURES%\
 echo.
