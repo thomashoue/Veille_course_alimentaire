@@ -118,8 +118,15 @@ items:
     label: Steak haché
     category: viande
     unit: kg
-    keywords: [steak haché, steak hache, haché 5%]
-    exclude_keywords: [bacon, burger surgele, wrap]
+    # 5 % ou 15 % MG, frais ou surgelé : le %MG change le prix, à comparer à
+    # taux égal — l'attribut le rend visible dans le rapport.
+    keywords: [steak haché, steak hache, steaks hachés, haché pur bœuf, haché 5%, haché 15%]
+    exclude_keywords: [bacon, burger surgele, wrap, cordon]
+    attribute_rules:
+      mg:
+        "5": [5% mg, 5 % mg, "5%", matière grasse 5]
+        "15": [15% mg, 15 % mg, "15%", matière grasse 15]
+        "20": [20% mg, 20 % mg, "20%"]
     qty_per_run: 1
 
   - id: poulet
@@ -261,7 +268,161 @@ items:
     keywords: [bière, biere]
     qty_per_run: 1
 
+  # ============================================================================
+  # Produits intégrés depuis la commande Drive Intermarché du 07/09/2026.
+  # Objectif : suivre chaque BESOIN pour comparer l'équivalent le moins cher
+  # entre enseignes (prix normalisé au kg/L/unité), pas la marque distributeur.
+  # ============================================================================
+
+  # ---------------- Surgelés ----------------
+  - id: pommes_noisettes
+    label: Pommes noisettes
+    category: surgele
+    unit: kg
+    keywords: [pommes noisettes, pomme noisette, pommes de terre noisettes]
+    qty_per_run: 0.9
+
+  - id: frites_surgelees
+    label: Frites au four surgelées
+    category: surgele
+    unit: kg
+    keywords: [frites]
+    exclude_keywords: [patate douce, potatoes épicées]
+    qty_per_run: 0.75
+
+  - id: epinards_surgeles
+    label: Épinards surgelés
+    category: surgele
+    unit: kg
+    keywords: [épinards, epinards]
+    qty_per_run: 0.6
+
+  - id: poisson_pane
+    label: Poisson pané (bâtonnets de colin)
+    category: surgele
+    unit: kg
+    keywords: [croustibat, bâtonnets de colin, batonnets de colin, poisson pané,
+               poisson pane, filets panés]
+    qty_per_run: 0.48
+
+  - id: cordon_bleu
+    label: Cordon bleu de volaille
+    category: surgele
+    unit: kg
+    keywords: [cordon bleu, cordons bleus]
+    qty_per_run: 0.4
+
+  # ---------------- Crèmerie / frais ----------------
+  - id: yaourt_nature
+    label: Yaourt nature
+    category: cremerie
+    unit: kg
+    keywords: [yaourt nature, yaourts nature]
+    exclude_keywords: [aromatisé, aromatise, sucré, fruit, grec, brassé, soja, végétal]
+    qty_per_run: 2        # un pack de 16 × 125 g
+
+  - id: cheddar_tranches
+    label: Cheddar en tranches
+    category: cremerie
+    unit: kg
+    keywords: [cheddar, tranchettes]
+    # Les plats préparés empruntent le nom du fromage (wrap, sandwich…) :
+    # on garde « tranchettes pour hamburger », on écarte le traiteur.
+    exclude_keywords: [wrap, sandwich, tacos, panini, croque, plat, salade, box]
+    qty_per_run: 0.2
+
+  - id: pate_pizza
+    label: Pâte à pizza
+    category: cremerie
+    unit: unite
+    keywords: [pâte à pizza, pate a pizza, pâte pizza]
+    qty_per_run: 2
+
+  # ---------------- Épicerie ----------------
+  - id: tomate_conserve
+    label: Tomates en conserve (purée / pelées / concassées)
+    category: conserve
+    unit: kg
+    keywords: [purée de tomates, puree de tomates, chair de tomate, tomates pelées,
+               tomates pelees, tomates concassées, tomates concassees, coulis de tomate,
+               pulpe de tomate]
+    exclude_keywords: [ketchup, sauce pizza, sauce bolognaise, soupe]
+    qty_per_run: 0.6
+
+  - id: legumineuses_conserve
+    label: Légumineuses en conserve (haricots rouges, pois chiches…)
+    category: conserve
+    unit: kg
+    # « net égoutté » : le prix doit se comparer sur le poids égoutté, jamais
+    # sur le poids brut (§5, piège brut vs net).
+    weight_basis_required: true
+    keywords: [haricots rouges, pois chiches, lentilles cuisinées, flageolets,
+               haricots blancs]
+    exclude_keywords: [secs, sèches, seches, sachet, soupe]
+    qty_per_run: 0.5      # deux boîtes de 250 g net
+
+  - id: haricots_verts_conserve
+    label: Haricots verts en conserve
+    category: conserve
+    unit: kg
+    weight_basis_required: true    # net égoutté, comme ci-dessus
+    keywords: [haricots verts]
+    exclude_keywords: [surgelé, surgele, frais]
+    qty_per_run: 0.44
+
+  - id: lait_coco
+    label: Lait de coco
+    category: epicerie
+    unit: L
+    keywords: [lait de coco, lait coco]
+    exclude_keywords: [crème de coco, boisson coco, eau de coco]
+    qty_per_run: 0.2
+
+  - id: galettes_riz
+    label: Galettes de riz
+    category: epicerie
+    unit: kg
+    keywords: [galettes de riz, galette de riz]
+    qty_per_run: 0.13
+
+  - id: chocolat_noir
+    label: Chocolat noir (tablette)
+    category: epicerie
+    unit: kg
+    keywords: [chocolat noir, tablette chocolat noir]
+    exclude_keywords: [pâtissier, patissier, dessert, poudre, chaud, biscuit]
+    qty_per_run: 0.1
+
+  # ---------------- Boulangerie ----------------
+  - id: pain_de_mie
+    label: Pain de mie
+    category: boulangerie
+    unit: kg
+    keywords: [pain de mie]
+    qty_per_run: 0.9
+
+  - id: pain_burger
+    label: Pains burger
+    category: boulangerie
+    unit: unite
+    keywords: [pain burger, pains burger, buns, pain hamburger]
+    qty_per_run: 4
+
   # ---------------- Fruits & légumes : hors périmètre drive (§10) ----------------
+  # Sachets frais achetés au drive (laitue lavée, herbe fraîche) : comparables
+  # d'une enseigne à l'autre, donc suivis (pas out_of_scope).
+  - id: laitue_sachet
+    label: Laitue prête à l'emploi (sachet)
+    category: fl
+    unit: kg
+    keywords: [cœur de laitue, coeur de laitue, laitue prête, salade prête, mâche, roquette sachet]
+    qty_per_run: 0.2
+  - id: herbes_fraiches
+    label: Herbes fraîches (coriandre, persil…)
+    category: fl
+    unit: unite
+    keywords: [coriandre, persil frais, basilic frais, ciboulette, aneth, menthe]
+    qty_per_run: 1
   - id: tomate
     label: Tomates
     category: fl
