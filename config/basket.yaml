@@ -31,6 +31,9 @@ items:
     category: cremerie
     unit: kg
     keywords: [mozzarella]
+    # Pizzas, wraps, salades et plats citent la mozzarella sans en être.
+    exclude_keywords: [pizza, wrap, sandwich, salade, panini, gratin, lasagne,
+                       plat, jambon, tarte, focaccia]
     qty_per_run: 0.4
 
   - id: comte
@@ -54,7 +57,10 @@ items:
     category: cremerie
     unit: kg
     keywords: [beurre]
-    exclude_keywords: [cacahuete, cacahuètes, dessert, gateau, biscuit]
+    # « Petit Beurre », « P'ti Déli », sablés… sont des biscuits, pas du beurre.
+    exclude_keywords: [cacahuete, cacahuètes, dessert, gateau, gâteau, biscuit,
+                       petit beurre, petit-beurre, p'ti déli, pocket, sablé, palet,
+                       galette, cake]
     qty_per_run: 1
 
   # ---------------- Épicerie ----------------
@@ -64,6 +70,9 @@ items:
     unit: kg
     bulk_worthy: true
     keywords: [lentilles, pois chiches, haricots secs, légumes secs]
+    # Plats cuisinés / repas express empruntent le nom de la légumineuse.
+    exclude_keywords: [repas, express, cuisiné, cuisine, plat, soupe, salade,
+                       boîte, boite, conserve, mijoté, galette, chips, apéritif]
     qty_per_run: 2
     qty_stock: 6
 
@@ -99,7 +108,11 @@ items:
     category: epicerie
     unit: kg
     keywords: [riz]
-    exclude_keywords: [chorizo, gateau de riz]
+    # « Galette de riz », « riz au lait », plats « … Riz Soja Céréal repas
+    # express » : le mot « riz » y désigne autre chose que le riz en paquet.
+    exclude_keywords: [chorizo, gateau de riz, gâteau de riz, galette, gerblé, gerble,
+                       soufflé, riz au lait, au lait, dessert, repas, express, cuisiné,
+                       plat, soja, céréal, boisson, chips]
     qty_per_run: 1
 
   - id: huile_olive
@@ -287,7 +300,11 @@ items:
     category: surgele
     unit: kg
     keywords: [frites]
-    exclude_keywords: [patate douce, potatoes épicées]
+    # « Pomme de terre de consommation … Frites » en sac de plusieurs kg, ce sont
+    # des patates CRUES (une variété à frire), pas des frites au four surgelées.
+    exclude_keywords: [patate douce, potatoes épicées, pomme de terre de consommation,
+                       colomba, à frire, crue, plant, variété, filet 5kg, filet 2.5kg,
+                       vrac]
     qty_per_run: 0.75
 
   - id: epinards_surgeles
@@ -295,6 +312,9 @@ items:
     category: surgele
     unit: kg
     keywords: [épinards, epinards]
+    # Les petits plats pour bébé empruntent le nom du légume.
+    exclude_keywords: [bébé, bebe, mots d'enfants, assiette, dès 18m, dès 12m,
+                       dès 6m, 18 mois, petit pot, purée, quiche, gratin, pizza]
     qty_per_run: 0.6
 
   - id: poisson_pane
@@ -375,7 +395,10 @@ items:
     category: epicerie
     unit: L
     keywords: [lait de coco, lait coco]
-    exclude_keywords: [crème de coco, boisson coco, eau de coco]
+    # La « boisson végétale coco » (ALPRO…) est une brique à boire, pas du lait
+    # de coco de cuisine : produit et prix différents.
+    exclude_keywords: [crème de coco, boisson coco, eau de coco, boisson végétale,
+                       boisson vegetale, végétal, vegetal, à boire, alpro, dessert]
     qty_per_run: 0.2
 
   - id: galettes_riz
@@ -390,7 +413,11 @@ items:
     category: epicerie
     unit: kg
     keywords: [chocolat noir, tablette chocolat noir]
-    exclude_keywords: [pâtissier, patissier, dessert, poudre, chaud, biscuit]
+    # Galettes de riz Gerblé, barres, céréales « chocolat noir » ne sont pas des
+    # tablettes.
+    exclude_keywords: [pâtissier, patissier, dessert, poudre, chaud, biscuit,
+                       galette, gerblé, gerble, riz soufflé, soufflé, barre, céréale,
+                       cookie, mousse, crème]
     qty_per_run: 0.1
 
   # ---------------- Boulangerie ----------------
@@ -482,3 +509,20 @@ items:
 
 # Magasins conseillés pour les articles hors périmètre drive.
 out_of_scope_stores: [grandfrais_tregueux]
+
+# Marqueurs de plats préparés / alimentation bébé : un libellé qui en contient
+# ne désigne jamais un ingrédient brut du panier. Écartés AVANT tout
+# rattachement (évite qu'une « assiette bébé carottes-pâtes-épinards » soit
+# prise pour des pâtes, ou un « wrap poulet cheddar » pour du cheddar).
+global_exclude_keywords:
+  - mots d'enfants
+  - dès 18m
+  - dès 12m
+  - dès 6m
+  - dès 4m
+  - 18 mois
+  - petit pot
+  - bébé
+  - repas express
+  - repas bébé
+  - assiette mots

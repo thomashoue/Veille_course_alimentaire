@@ -349,6 +349,15 @@ class TestFauxPositifsIntermarche:
         "Sodebo Wraper's wrap poulet pané cheddar oignon frits",
         "Monique Ranou Maxi bacon burger 195g",
         "Mamie Nova Gourmand Dessert Cœur de Liégeois chocolat",
+        # Pièges relevés sur pages Leclerc/Hyper U (comparatif commande 09/2026) :
+        # produits transformés qui empruntent le nom d'un ingrédient brut.
+        "Assiette Mots d'Enfants 250g Carottes pâtes épinards dès 18M",
+        "Petit Beurre Pocket P'ti Déli 3x12 sachets 300g",
+        "U Pizza jambon emmental mozzarella 450g",
+        "Boisson végétale lait de coco ALPRO -brique 1l",
+        "Pomme de terre de consommation Colomba Frites Filet 5Kg FRANCE",
+        "Galette riz chocolat noir GERBLE 130,4g",
+        "Lentilles Riz Soja Céréal Bio repas express 250g",
     ])
     def test_les_faux_positifs_sont_ecartes(self, config, label):
         assert config.match_item(label) is None
@@ -359,6 +368,14 @@ class TestFauxPositifsIntermarche:
         ("Odyssée Intermarché thon piquant 120 g", "conserve_poisson"),
         ("Président Emmental râpé fondant sachet 350 g", "emmental_rape"),
         ("Café moulu Classique pur arabica 500 g", "cafe"),
+        # Vrais produits de la commande : le durcissement ne doit pas les perdre.
+        ("Saint Eloi Épinards en branches BIO surgelés 600 g", "epinards_surgeles"),
+        ("Pâturages Beurre gastronomique demi-sel 125 g", "beurre"),
+        ("Itinéraire des Saveurs Mozzarella di Bufala Campana AOP 125 g", "mozzarella"),
+        ("Itinéraire des Saveurs Lait de coco briquette 200 ml", "lait_coco"),
+        ("Les Créations Chocolat noir 85% tablette 100 g", "chocolat_noir"),
+        ("Saint Eloi Frites au four surgelées 750 g", "frites_surgelees"),
+        ("Saint Eloi Riz basmati 500g", "riz"),
     ])
     def test_les_vrais_produits_matchent_toujours(self, config, label, expected):
         assert config.match_item(label).id == expected

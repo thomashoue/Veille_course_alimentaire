@@ -39,6 +39,10 @@ class Config:
     out_of_scope_stores: list[str] = field(default_factory=list)
     recipes: dict[str, Recipe] = field(default_factory=dict)
     servings_base: int = 4
+    # Marqueurs de plats préparés / bébé : un libellé qui en contient ne désigne
+    # jamais un ingrédient brut du panier (une « assiette bébé carottes-pâtes »
+    # n'est ni des carottes ni des pâtes). Filtré AVANT tout rattachement.
+    global_exclude_keywords: list[str] = field(default_factory=list)
 
     # -- magasins ----------------------------------------------------------- #
     def store(self, store_id: str) -> Store:
@@ -79,6 +83,10 @@ class Config:
         « croquettes »).
         """
         haystack = _normalize(label or "")
+        # Filtre global : plats préparés, petits pots bébé, produits transformés
+        # citent le nom d'un ingrédient sans en être — on les écarte d'emblée.
+        if any(_contains_word(haystack, junk) for junk in self.global_exclude_keywords):
+            return None
         best: tuple[int, BasketItem] | None = None
         for item in self.items.values():
             if item.out_of_scope_drive and not include_out_of_scope:
@@ -186,6 +194,7 @@ def load_config(config_dir: Path | str | None = None) -> Config:
         out_of_scope_stores=basket_raw.get("out_of_scope_stores", []),
         recipes=recipes,
         servings_base=int(recipes_raw.get("servings_base", 4)),
+        global_exclude_keywords=basket_raw.get("global_exclude_keywords", []),
     )
 
 
