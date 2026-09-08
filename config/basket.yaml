@@ -57,10 +57,12 @@ items:
     category: cremerie
     unit: kg
     keywords: [beurre]
-    # « Petit Beurre », « P'ti Déli », sablés… sont des biscuits, pas du beurre.
+    # « Petit Beurre », « P'ti Déli », sablés… = biscuits ; « haricots beurre »
+    # = un légume (haricots jaunes) : rien de tout ça n'est du beurre.
     exclude_keywords: [cacahuete, cacahuètes, dessert, gateau, gâteau, biscuit,
                        petit beurre, petit-beurre, p'ti déli, pocket, sablé, palet,
-                       galette, cake]
+                       galette, cake, haricots beurre, haricot beurre, haricots,
+                       cacao]
     qty_per_run: 1
 
   # ---------------- Épicerie ----------------
