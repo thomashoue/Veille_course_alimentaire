@@ -586,7 +586,7 @@ def cmd_compare(args: argparse.Namespace) -> int:
             if basket.store.min_order_eur and total < basket.store.min_order_eur:
                 alerte = f"  ⚠ panier {format_eur(total)} SOUS le minimum"
             print(f"  {basket.store.name} — {basket.n_items} art. · "
-                  f"gain net {format_eur(basket.net_gain_eur)} · "
+                  f"sous-total {format_eur(total)} · "
                   f"détour {basket.store.detour_km:g} km{mini}{alerte}")
             for offer in basket.offers:
                 print(f"      - {offer.item.label}: {offer.observation.product_label} "
@@ -601,10 +601,29 @@ def cmd_compare(args: argparse.Namespace) -> int:
             print(f"    - {config.item(item_id).label} chez "
                   f"{config.store(offer.store_id).name}")
 
-    print(f"\nÉconomie totale estimée : {format_eur(plan.total_saving)} · "
-          f"gain net : {format_eur(plan.total_net_gain)}")
+    cost = plan.cost
+    if cost and cost.best_single_store:
+        store_name = config.store(cost.best_single_store).name
+        etoile = "" if cost.best_single_covers_all else " *"
+        print("\n" + "=" * 68)
+        print(f"GAIN RÉEL — {cost.n_items} articles comparés (prix normalisé × quantité)")
+        print("=" * 68)
+        print(f"  Tout au même magasin (le moins cher : {store_name}{etoile}) : "
+              f"{format_eur(cost.best_single_total)}")
+        print(f"  Au meilleur prix, magasin par magasin              : "
+              f"{format_eur(cost.split_total)}")
+        print(f"  → Gain réel de l'éclatement : {format_eur(cost.real_gain)} "
+              f"({cost.real_gain_pct:.0f} %)")
+        if not cost.best_single_covers_all:
+            print("  * ce magasin ne vend pas tout le panier ; les articles manquants")
+            print("    sont comptés au meilleur prix trouvé ailleurs (comparaison neutre).")
+        if cost.real_gain < float(config.param("min_net_gain_eur", 0.0)):
+            print("  Éclater les courses sur plusieurs magasins ne vaut pas le détour :")
+            print("  le meilleur magasin unique est le choix raisonnable.")
+    else:
+        print("\n(Comparaison de coût indisponible : aucun article chiffré.)")
     if pistes:
-        print(f"{len(pistes)} relevé(s) en « à vérifier » (non actionnables).")
+        print(f"\n{len(pistes)} relevé(s) en « à vérifier » (non actionnables).")
     return 0
 
 

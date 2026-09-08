@@ -117,13 +117,23 @@ def build_report(
 ) -> Report:
     """Assemble le compte rendu à partir du plan d'affectation."""
     now = generated_at or datetime.now()
-    lines: list[str] = [
-        f"# Veille courses — {now:%A %d %B %Y %Hh%M}",
-        "",
-        f"Économie estimée : **{format_eur(plan.total_saving)}** · "
-        f"gain net après carburant : **{format_eur(plan.total_net_gain)}**",
-        "",
-    ]
+    lines: list[str] = [f"# Veille courses — {now:%A %d %B %Y %Hh%M}", ""]
+    cost = plan.cost
+    if cost and cost.best_single_store:
+        store_name = config.store(cost.best_single_store).name
+        etoile = "\\*" if not cost.best_single_covers_all else ""
+        lines += [
+            f"Panier comparé sur **{cost.n_items} articles** (prix normalisé × quantité) :",
+            "",
+            f"- Tout au même magasin (le moins cher : {store_name}{etoile}) : "
+            f"**{format_eur(cost.best_single_total)}**",
+            f"- Au meilleur prix, magasin par magasin : **{format_eur(cost.split_total)}**",
+            f"- **Gain réel de l'éclatement : {format_eur(cost.real_gain)}** "
+            f"({cost.real_gain_pct:.0f} %)",
+            "",
+        ]
+    else:
+        lines += [f"Économie estimée : **{format_eur(plan.total_saving)}**", ""]
     if pickup_date:
         lines += [f"Date de retrait retenue pour les avantages carte : **{pickup_date:%d/%m/%Y}**", ""]
 

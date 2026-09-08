@@ -53,6 +53,45 @@ class TestAffectation:
         assert [b.store.id for b in plan.baskets] == ["intermarche_montauban"]
 
 
+class TestGainReel:
+    """La ligne « gain réel » : meilleur magasin unique vs éclaté."""
+
+    def _offer(self, config, store_id, item_id, price, pack_kg):
+        from src.models import PriceObservation
+        from src.normalize import normalize
+        obs = PriceObservation(
+            store_id=store_id, basket_item_id=item_id, product_label=f"{item_id} {pack_kg}kg",
+            price_eur=price, pack_size=pack_kg, pack_unit="kg", pack_count=1,
+            verified_in_drive=True,
+        )
+        normalize(obs, config)
+        return Offer(observation=obs, item=config.item(item_id), verdict=OK(),
+                     grade=Grade.GOOD, saving_eur=0.0)
+
+    def test_gain_eclatement_vs_magasin_unique(self, config):
+        # riz : Leclerc 3 €/kg, Hyper U 4 €/kg  → Leclerc gagne (qty 1 kg)
+        # pâtes : Leclerc 5 €/kg, Hyper U 2 €/kg → Hyper U gagne (qty 2 kg)
+        offers = [
+            self._offer(config, "leclerc_pleumeleuc", "riz", 3.0, 1.0),
+            self._offer(config, "hyperu_yffiniac", "riz", 4.0, 1.0),
+            self._offer(config, "leclerc_pleumeleuc", "pates", 5.0, 1.0),
+            self._offer(config, "hyperu_yffiniac", "pates", 2.0, 1.0),
+        ]
+        cost = assign(offers, config).cost
+        assert cost is not None and cost.n_items == 2
+        # éclaté : riz 3×1 + pâtes 2×2 = 7 ; meilleur unique = Hyper U (4 + 2×2 = 8)
+        assert cost.split_total == pytest.approx(7.0)
+        assert cost.best_single_store == "hyperu_yffiniac"
+        assert cost.best_single_total == pytest.approx(8.0)
+        assert cost.real_gain == pytest.approx(1.0)
+
+    def test_un_seul_magasin_aucun_gain(self, config):
+        offers = [self._offer(config, "intermarche_montauban", "riz", 2.0, 1.0)]
+        cost = assign(offers, config).cost
+        assert cost.real_gain == pytest.approx(0.0)
+        assert cost.best_single_covers_all is True
+
+
 class TestDetour:
     def test_petit_gain_ne_justifie_pas_le_detour(self, config):
         offer = make_offer(config, "action_pace", "papier_toilette", "PQ 24 rouleaux", 4.97, 0.10)

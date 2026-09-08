@@ -47,6 +47,86 @@ class StoreBasket:
 
 
 @dataclass
+class BasketCost:
+    """Le seul chiffre qui répond à « aurais-je pu payer moins ? ».
+
+    On chiffre le même panier de deux façons, à quantité égale (prix normalisé ×
+    quantité du run, ce qui neutralise les différences de format) :
+      * ``best_single_total`` — tout dans le meilleur magasin UNIQUE ;
+      * ``split_total``       — chaque article à son meilleur prix, magasins
+                                confondus (l'éclatement).
+    ``real_gain`` = ce que l'éclatement fait gagner sur le meilleur magasin
+    unique. C'est un gain réel, pas la somme d'écarts marginaux.
+    """
+    n_items: int
+    split_total: float
+    per_store_total: dict[str, float]
+    best_single_store: str | None
+    best_single_total: float
+    best_single_covers_all: bool
+
+    @property
+    def real_gain(self) -> float:
+        return max(0.0, self.best_single_total - self.split_total)
+
+    @property
+    def real_gain_pct(self) -> float:
+        return 100.0 * self.real_gain / self.best_single_total if self.best_single_total else 0.0
+
+
+def basket_costs(offers: list[Offer], config: Config) -> BasketCost | None:
+    """Chiffre le panier : meilleur magasin unique vs éclaté au meilleur prix.
+
+    À quantité égale (``qty_per_run`` × prix normalisé), donc un format de 1 kg
+    et une boîte de 250 g se comparent honnêtement. Un magasin qui ne vend pas
+    un article se voit prêter le meilleur prix trouvé ailleurs pour cet article
+    (neutre) ; on signale alors qu'il ne couvre pas tout le panier.
+    """
+    by_item: dict[str, dict[str, float]] = {}
+    for o in offers:
+        if o.unit_price is None:
+            continue
+        prices = by_item.setdefault(o.item.id, {})
+        if o.store_id not in prices or o.unit_price < prices[o.store_id]:
+            prices[o.store_id] = o.unit_price
+    if not by_item:
+        return None
+
+    qty = {iid: float(config.items[iid].qty_per_run) for iid in by_item}
+    cheapest = {iid: min(prices.values()) for iid, prices in by_item.items()}
+    split_total = sum(cheapest[iid] * qty[iid] for iid in by_item)
+
+    stores = {sid for prices in by_item.values() for sid in prices}
+    per_store: dict[str, float] = {}
+    covers_all: dict[str, bool] = {}
+    for sid in stores:
+        total = 0.0
+        has_all = True
+        for iid, prices in by_item.items():
+            if sid in prices:
+                total += prices[sid] * qty[iid]
+            else:
+                total += cheapest[iid] * qty[iid]   # prêté au meilleur prix
+                has_all = False
+        per_store[sid] = round(total, 2)
+        covers_all[sid] = has_all
+
+    # Meilleur magasin unique : d'abord ceux qui couvrent tout le panier ; à
+    # défaut, le moins cher en prêtant les articles manquants.
+    full = {s: t for s, t in per_store.items() if covers_all[s]}
+    pool = full or per_store
+    best = min(pool, key=pool.get)
+    return BasketCost(
+        n_items=len(by_item),
+        split_total=round(split_total, 2),
+        per_store_total=per_store,
+        best_single_store=best,
+        best_single_total=per_store[best],
+        best_single_covers_all=covers_all[best],
+    )
+
+
+@dataclass
 class Plan:
     baskets: list[StoreBasket]
     unmatched: list[str] = field(default_factory=list)      # aucun prix conforme
@@ -56,6 +136,7 @@ class Plan:
     # cause de détour : ce n'est PAS une absence d'offre, et le dire
     # autrement ferait passer un arbitrage de trajet pour un échec de veille.
     deferred: dict[str, Offer] = field(default_factory=dict)
+    cost: BasketCost | None = None
 
     def by_assignee(self) -> dict[str, list[StoreBasket]]:
         grouped: dict[str, list[StoreBasket]] = {}
@@ -228,6 +309,7 @@ def assign(offers: list[Offer], config: Config) -> Plan:
         out_of_scope=out_of_scope,
         dropped=dropped,
         deferred=deferred,
+        cost=basket_costs(candidates, config),
     )
     assert_no_excluded(plan, config)
     return plan
