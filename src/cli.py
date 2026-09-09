@@ -950,6 +950,41 @@ def cmd_history(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_sync_orders(args: argparse.Namespace) -> int:
+    """Replie dans l'historique local les relevés de commande commités.
+
+    La routine hebdo (cloud) lit Gmail et dépose un JSON de relevés par commande
+    dans data/mail_orders/. Ici, sur le PC, on les verse dans le ledger — c'est
+    ce qui fait grandir la mémoire des habitudes. Idempotent : resynchroniser
+    ne double rien (dédoublonnage par empreinte du relevé).
+    """
+    from .pipeline import load_observations
+
+    config = get_config(args.config)
+    directory = Path(args.dir or (Path("data") / "mail_orders"))
+    files = sorted(directory.glob("*.json")) if directory.exists() else []
+    if not files:
+        print(f"Aucun relevé de commande dans {directory}/ "
+              "(la routine hebdo n'a peut-être encore rien déposé).")
+        return 0
+
+    ledger = Ledger(args.ledger)
+    total = 0
+    for path in files:
+        try:
+            observations = load_observations(path, config)
+        except (ValueError, OSError) as exc:
+            print(f"  {path.name}: illisible ({exc}) — ignoré.")
+            continue
+        ledger.record_all([(o, None) for o in observations])
+        total += len(observations)
+        print(f"  {path.name}: {len(observations)} relevé(s)")
+    ledger.close()
+    print(f"\n{total} relevé(s) versés dans l'historique depuis {len(files)} commande(s) "
+          "(réimport sans effet : dédoublonné par empreinte).")
+    return 0
+
+
 def cmd_ingest_mail(args: argparse.Namespace) -> int:
     """Lit un (ou des) e-mail(s) de commande et alimente l'historique.
 
@@ -1233,6 +1268,14 @@ def build_parser() -> argparse.ArgumentParser:
     ingest_mail.add_argument("--append", action="store_true",
                              help="ajouter au JSON --out existant")
     ingest_mail.set_defaults(func=cmd_ingest_mail)
+
+    sync_orders = sub.add_parser(
+        "sync-orders",
+        help="verser dans l'historique local les relevés de commande commités (routine mail)",
+    )
+    sync_orders.add_argument("--dir", help="dossier des relevés (défaut : data/mail_orders)")
+    sync_orders.add_argument("--ledger", help="base d'historique (défaut : data/observations.sqlite)")
+    sync_orders.set_defaults(func=cmd_sync_orders)
 
     fill = sub.add_parser("fill", help="remplir les paniers drive (créneau et paiement exclus)")
     fill.add_argument("--manual")
