@@ -950,6 +950,65 @@ def cmd_history(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest_mail(args: argparse.Namespace) -> int:
+    """Lit un (ou des) e-mail(s) de commande et alimente l'historique.
+
+    C'est la veille des mails : chaque confirmation de commande drive devient
+    des relevés vérifiés dans le ledger, sans re-saisie — l'outil apprend ce
+    qu'on achète et à quel prix, semaine après semaine.
+    """
+    from .ingest_mail import parse_order, read_email, to_observations
+    from .normalize import normalize
+
+    config = get_config(args.config)
+    paths: list[Path] = []
+    if args.dir:
+        for pat in ("*.eml", "*.txt", "*.html", "*.htm"):
+            paths += sorted(Path(args.dir).glob(pat))
+    if args.file:
+        paths.append(Path(args.file))
+    if not paths:
+        print("Rien à lire : donnez --file <e-mail> ou --dir <dossier>.")
+        return 2
+
+    from .models import PriceObservation
+    ledger = None if args.no_record else Ledger(args.ledger)
+    all_obs: list[PriceObservation] = []
+    for path in paths:
+        order = parse_order(read_email(path), config)
+        if not order.store_id:
+            print(f"{path.name}: enseigne non reconnue — ignoré.")
+            continue
+        obs = to_observations(order, config)
+        for o in obs:
+            normalize(o, config)
+        store = config.store(order.store_id)
+        print(f"\n{path.name} → {store.name} ({order.order_date}, "
+              f"{len(obs)} article(s), commande {order.reference or '?'})")
+        for o in obs:
+            up = f"{o.best_unit_price:.3f} €/{o.unit_price_unit}" if o.best_unit_price else "n/c"
+            print(f"  {o.price_eur:>6.2f} €  {o.pack_label():>13}  "
+                  f"{config.item(o.basket_item_id).label:<24} {up}")
+        if order.unmatched:
+            print(f"  ({len(order.unmatched)} ligne(s) non rattachée(s) au panier)")
+        all_obs += obs
+        if ledger is not None:
+            ledger.record_all([(o, None) for o in obs])
+
+    if ledger is not None:
+        ledger.close()
+        print(f"\n{len(all_obs)} relevé(s) ajoutés à l'historique "
+              f"({args.ledger or 'data/observations.sqlite'}).")
+    if args.out and all_obs:
+        out = Path(args.out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        existing = json.loads(out.read_text(encoding="utf-8")) if (out.exists() and args.append) else []
+        out.write_text(json.dumps(existing + [o.to_row() for o in all_obs],
+                                  ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"Relevés écrits dans {out}.")
+    return 0
+
+
 def cmd_fill(args: argparse.Namespace) -> int:
     from .pipeline import fill_carts, run
 
@@ -1160,6 +1219,20 @@ def build_parser() -> argparse.ArgumentParser:
     history.add_argument("--limit", type=int, default=30)
     history.add_argument("--ledger", help="chemin de la base")
     history.set_defaults(func=cmd_history)
+
+    ingest_mail = sub.add_parser(
+        "ingest-mail",
+        help="lire les e-mails de commande drive et alimenter l'historique",
+    )
+    ingest_mail.add_argument("--file", help="un e-mail (.eml / .txt / .html)")
+    ingest_mail.add_argument("--dir", help="un dossier d'e-mails à lire d'un coup")
+    ingest_mail.add_argument("--ledger", help="base d'historique (défaut : data/observations.sqlite)")
+    ingest_mail.add_argument("--no-record", action="store_true",
+                             help="ne pas écrire dans l'historique (aperçu seul)")
+    ingest_mail.add_argument("--out", help="écrire aussi les relevés en JSON")
+    ingest_mail.add_argument("--append", action="store_true",
+                             help="ajouter au JSON --out existant")
+    ingest_mail.set_defaults(func=cmd_ingest_mail)
 
     fill = sub.add_parser("fill", help="remplir les paniers drive (créneau et paiement exclus)")
     fill.add_argument("--manual")

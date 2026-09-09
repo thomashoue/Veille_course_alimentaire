@@ -303,6 +303,30 @@ En ligne de commande, sans page : `menu --list` (recettes disponibles),
 
 ---
 
+## Veille des e-mails de commande
+
+Chaque commande drive arrive par mail (« Votre commande est validée ! ») avec
+la liste exacte des produits et prix payés. Plutôt que de re-saisir, on lit
+l'e-mail : il devient des relevés vérifiés dans l'historique. **C'est ainsi que
+l'outil apprend vos habitudes** — et détecte ensuite les vraies promos.
+
+```bash
+# Un e-mail enregistré (Gmail → « Télécharger le message » = .eml, ou copié en .txt)
+python -m src.cli ingest-mail --file "commande.eml"
+
+# Tout un dossier d'e-mails d'un coup
+python -m src.cli ingest-mail --dir mes_commandes
+```
+
+Le magasin est reconnu depuis l'enseigne + la ville (insensible aux accents),
+chaque produit rattaché au panier, le prix normalisé au kg/L/unité, le poids
+net égoutté et le %MG pris en compte. Les relevés sont ajoutés à
+`data/observations.sqlite` (idempotent : réimporter le même mail ne double
+rien). `--no-record` pour un aperçu sans écrire ; `--out relevés.json` pour
+exporter aussi en JSON. Format géré aujourd'hui : Intermarché drive.
+
+---
+
 ## Faire évoluer les réglages
 
 Rien de calibré ne se touche dans le code :
