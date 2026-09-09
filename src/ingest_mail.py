@@ -168,14 +168,18 @@ def _extract_pack(line: OrderLine, item_unit: str) -> None:
 
 def parse_order(text: str, config: Config) -> Order:
     """Extrait la commande d'un e-mail de confirmation drive."""
-    store_id = detect_store(text, config)
-    ref_m = re.search(r"N°\s*de\s*commande\s*(\d+)", text)
-    total_m = re.search(r"total[^\n:]*:?\s*(\d+(?:[.,]\d{2}))\s*€", text, re.IGNORECASE)
+    # Les e-mails HTML aplatis en texte encadrent chaque cellule de « | … | » :
+    # on retire ces barres pour que « | 3,71 € | » redevienne un prix lisible.
+    lines = [c for ln in text.splitlines()
+             if (c := ln.strip().strip("|").strip())]
+    blob = "\n".join(lines)             # texte nettoyé, pour les motifs d'en-tête
 
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    store_id = detect_store(blob, config)
+    ref_m = re.search(r"N°\s*de\s*commande\s*(\d+)", blob)
+    total_m = re.search(r"total[^\n:]*:?\s*(\d+(?:[.,]\d{2}))\s*€", blob, re.IGNORECASE)
     order = Order(
         store_id=store_id,
-        order_date=_order_date(text),
+        order_date=_order_date(blob),
         reference=ref_m.group(1) if ref_m else None,
         total_eur=_num(total_m.group(1)) if total_m else None,
     )

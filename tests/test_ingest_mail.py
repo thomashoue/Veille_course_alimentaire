@@ -49,3 +49,24 @@ class TestParseCommande:
         obs = to_observations(order, config)
         assert obs and all(o.verified_in_drive and o.source == "drive" for o in obs)
         assert all(o.store_id == "intermarche_montauban" for o in obs)
+
+
+class TestFormatGmailReel:
+    """Le vrai e-mail Gmail aplati encadre chaque cellule de « | … | »."""
+
+    PIPES = Path(__file__).parent / "fixtures" / "mail_intermarche_pipes.txt"
+
+    def test_barres_ne_cassent_ni_entete_ni_prix(self, config):
+        order = parse_order(read_email(self.PIPES), config)
+        assert order.store_id == "intermarche_montauban"
+        assert order.reference == "525147373"
+        assert order.total_eur == pytest.approx(58.30)   # « | 58,30 € | » lu malgré les barres
+        assert len(order.lines) == 5
+
+    def test_cas_delicats(self, config):
+        order = parse_order(read_email(self.PIPES), config)
+        by_id = {o.basket_item_id: o for o in order.lines}
+        assert by_id["yaourt_nature"].pack_size == pytest.approx(2.0)   # 16 × 125 g
+        assert by_id["oignon"].pack_unit == "kg"                        # vrac x0.3 kg → €/kg
+        assert by_id["oeufs"].pack_count == 20                          # la boite de 20
+        assert by_id["mozzarella"].weight_basis == "net_egoutte"
