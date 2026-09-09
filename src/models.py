@@ -298,6 +298,8 @@ class Offer:
     saving_eur: float = 0.0        # économie estimée sur la quantité du run
     is_record: bool = False
     previous_best: float | None = None
+    habitual_price: float | None = None   # médiane historique (prix habituel)
+    promo_pct: float | None = None        # % SOUS le prix habituel (>0 = promo)
     comment: str = ""
 
     @property

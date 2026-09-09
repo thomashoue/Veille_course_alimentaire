@@ -14,6 +14,9 @@ params:
   min_net_gain_eur: 0.50
   # Un « record » doit battre le précédent d'au moins ça, sinon c'est du bruit.
   record_margin_pct: 2.0
+  # Une offre est listée en « meilleure promo » si elle est au moins ce % SOUS
+  # le prix habituel (médiane historique de l'article).
+  promo_min_pct: 5.0
   # Fenêtre d'historique pour la tendance.
   trend_weeks: 12
   # Conversion poids brut → net égoutté (P5). Uniquement là où le ratio est

@@ -536,7 +536,15 @@ def cmd_compare(args: argparse.Namespace) -> int:
     config = get_config(args.config)
     observations = load_observations(args.manual, config)
     kept, _ = shortlist(observations, config)
-    offers, pistes = build_offers(kept, config)
+    # Lecture seule de l'historique : de quoi repérer les promos vs prix
+    # habituel, sans écrire (compare ne fait pas de « run »).
+    ledger = None
+    if not getattr(args, "no_ledger", False):
+        from .ledger import Ledger
+        ledger = Ledger(args.ledger)
+    offers, pistes = build_offers(kept, config, ledger)
+    if ledger is not None:
+        ledger.close()
     plan = assign(offers, config)
 
     print("=" * 68)
@@ -600,6 +608,19 @@ def cmd_compare(args: argparse.Namespace) -> int:
         for item_id, offer in plan.deferred.items():
             print(f"    - {config.item(item_id).label} chez "
                   f"{config.store(offer.store_id).name}")
+
+    from .report import best_promos
+    promos = best_promos(offers, config)
+    if promos:
+        print("\n" + "=" * 68)
+        print("🔥 MEILLEURES PROMOS — sous votre prix habituel")
+        print("=" * 68)
+        for offer in promos:
+            unit = offer.observation.unit_price_unit or ""
+            print(f"  −{offer.promo_pct:>4.0f} %  {offer.item.label:<26} "
+                  f"{format_price(offer.unit_price, unit):>12} chez "
+                  f"{config.store(offer.store_id).name[:22]:<22} "
+                  f"(habituel {format_price(offer.habitual_price, unit)})")
 
     cost = plan.cost
     if cost and cost.best_single_store:
@@ -1060,6 +1081,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="test multi-enseignes : face-à-face par article + affectation, sur vos relevés",
     )
     compare.add_argument("--manual", required=True, help="fichier de relevés (data/manual.json)")
+    compare.add_argument("--ledger", help="base d'historique pour les promos (défaut : data/observations.sqlite)")
+    compare.add_argument("--no-ledger", action="store_true",
+                         help="ne pas lire l'historique (pas de section promos)")
     compare.set_defaults(func=cmd_compare)
 
     menu = sub.add_parser(

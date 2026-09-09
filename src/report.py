@@ -27,6 +27,24 @@ GRADE_MARK = {
 }
 
 
+def best_promos(offers: list[Offer], config: Config, min_pct: float | None = None) -> list[Offer]:
+    """Les vraies promos : prix nettement SOUS l'habituel (médiane historique).
+
+    Un seul relevé par article (le plus bas), classés par écart décroissant.
+    Renvoie une liste vide tant que l'historique est trop court pour connaître
+    une habitude (``promo_pct`` reste alors None).
+    """
+    floor = float(config.param("promo_min_pct", 5.0)) if min_pct is None else float(min_pct)
+    best_by_item: dict[str, Offer] = {}
+    for offer in offers:
+        if offer.promo_pct is None or offer.promo_pct < floor:
+            continue
+        current = best_by_item.get(offer.item.id)
+        if current is None or offer.promo_pct > (current.promo_pct or 0):
+            best_by_item[offer.item.id] = offer
+    return sorted(best_by_item.values(), key=lambda o: o.promo_pct or 0, reverse=True)
+
+
 @dataclass
 class Report:
     markdown: str
@@ -110,6 +128,7 @@ def build_report(
     plan: Plan,
     config: Config,
     *,
+    offers: list[Offer] | None = None,
     pistes: list[Offer] | None = None,
     observed_item_ids: set[str] | None = None,
     generated_at: datetime | None = None,
@@ -118,6 +137,18 @@ def build_report(
     """Assemble le compte rendu à partir du plan d'affectation."""
     now = generated_at or datetime.now()
     lines: list[str] = [f"# Veille courses — {now:%A %d %B %Y %Hh%M}", ""]
+    promos = best_promos(offers, config) if offers else []
+    if promos:
+        lines += ["## 🔥 Meilleures promos (sous votre prix habituel)", ""]
+        for offer in promos:
+            unit = offer.observation.unit_price_unit or ""
+            lines.append(
+                f"- **{offer.item.label} −{offer.promo_pct:.0f} %** — "
+                f"{format_price(offer.unit_price, unit)} chez "
+                f"{config.store(offer.store_id).name} "
+                f"(habituel {format_price(offer.habitual_price, unit)})"
+            )
+        lines.append("")
     cost = plan.cost
     if cost and cost.best_single_store:
         store_name = config.store(cost.best_single_store).name
