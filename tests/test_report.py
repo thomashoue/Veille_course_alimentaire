@@ -28,7 +28,7 @@ class TestRapport:
     def test_groupe_par_magasin_et_par_personne(self, config):
         offers = [
             offer(config, "leclerc_pleumeleuc", "lait_demi_ecreme", "Lait 6x1L", 4.80),
-            offer(config, "superu_yffiniac", "cafe", "Café moulu 1 kg", 8.00, saving=4.0),
+            offer(config, "hyperu_yffiniac", "cafe", "Café moulu 1 kg", 8.00, saving=4.0),
         ]
         report = build_report(assign(offers, config), config)
         assert "E.Leclerc Pleumeleuc" in report.markdown
@@ -71,7 +71,7 @@ class TestRapport:
             grade=Grade.GOOD,
         )
         report = build_report(assign([], config), config, pistes=[piste])
-        assert "Pistes non vérifiées" in report.markdown
+        assert "À vérifier avant achat" in report.markdown
         assert "Friskies" in report.markdown
         assert "Friskies" not in report.whatsapp
 
@@ -129,3 +129,13 @@ class TestOffreReportee:
         assert "Litière charbon actif 5 L" in report.markdown
         # Et surtout : elle ne doit PAS être annoncée comme introuvable.
         assert "- **Litière chat** : rien de conforme" not in report.markdown
+
+
+class TestMinimumDeCommande:
+    def test_le_minimum_du_drive_est_rappele(self, config):
+        from src.assign import assign
+        from src.report import build_report
+
+        offers = [offer(config, "hyperu_yffiniac", "cafe", "Café moulu 1 kg", 7.00, saving=4.0)]
+        report = build_report(assign(offers, config), config)
+        assert "minimum de commande 30,00 €" in report.markdown

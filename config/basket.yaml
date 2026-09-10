@@ -16,34 +16,53 @@ items:
     unit: L
     bulk_worthy: true
     keywords: [lait demi-écrémé, lait demi ecreme]
-    qty_per_run: 12
+    qty_per_run: 12        # deux packs de 6x1L
+    qty_stock: 24
 
   - id: emmental_rape
     label: Emmental râpé
     category: cremerie
     unit: kg
     keywords: [emmental râpé, emmental rape]
-    qty_per_run: 1
+    qty_per_run: 0.5
 
   - id: mozzarella
     label: Mozzarella
     category: cremerie
     unit: kg
     keywords: [mozzarella]
-    qty_per_run: 1
+    # Pizzas, wraps, salades et plats citent la mozzarella sans en être.
+    exclude_keywords: [pizza, wrap, sandwich, salade, panini, gratin, lasagne,
+                       plat, jambon, tarte, focaccia]
+    qty_per_run: 0.4
 
   - id: comte
     label: Comté
     category: cremerie
     unit: kg
     keywords: [comté, comte]
-    qty_per_run: 1
+    exclude_keywords: [saucisson, chips, biscuit, aperitif]
+    qty_per_run: 0.3
+
+  - id: oeufs
+    label: Œufs
+    category: cremerie
+    unit: unite
+    keywords: [œufs, oeufs]
+    exclude_keywords: [creme, dessert, clafoutis, yaourt, flan]
+    qty_per_run: 12
 
   - id: beurre
     label: Beurre demi-sel
     category: cremerie
     unit: kg
     keywords: [beurre]
+    # « Petit Beurre », « P'ti Déli », sablés… = biscuits ; « haricots beurre »
+    # = un légume (haricots jaunes) : rien de tout ça n'est du beurre.
+    exclude_keywords: [cacahuete, cacahuètes, dessert, gateau, gâteau, biscuit,
+                       petit beurre, petit-beurre, p'ti déli, pocket, sablé, palet,
+                       galette, cake, haricots beurre, haricot beurre, haricots,
+                       cacao]
     qty_per_run: 1
 
   # ---------------- Épicerie ----------------
@@ -53,7 +72,11 @@ items:
     unit: kg
     bulk_worthy: true
     keywords: [lentilles, pois chiches, haricots secs, légumes secs]
+    # Plats cuisinés / repas express empruntent le nom de la légumineuse.
+    exclude_keywords: [repas, express, cuisiné, cuisine, plat, soupe, salade,
+                       boîte, boite, conserve, mijoté, galette, chips, apéritif]
     qty_per_run: 2
+    qty_stock: 6
 
   - id: conserve_poisson
     label: Conserves de poisson
@@ -61,7 +84,9 @@ items:
     unit: kg
     bulk_worthy: true
     keywords: [sardines, thon, maquereaux]
-    qty_per_run: 6
+    qty_per_run: 0.6       # ~6 boîtes de 93 g net
+    qty_stock: 2.5
+    stock_unit: boite      # l'inventaire compte les boîtes (le kg sert au prix)
     weight_basis_required: true
 
   - id: cafe
@@ -71,6 +96,7 @@ items:
     bulk_worthy: true
     keywords: [café moulu, cafe moulu, café grains]
     qty_per_run: 1
+    qty_stock: 3
 
   - id: pates
     label: Pâtes
@@ -84,6 +110,11 @@ items:
     category: epicerie
     unit: kg
     keywords: [riz]
+    # « Galette de riz », « riz au lait », plats « … Riz Soja Céréal repas
+    # express » : le mot « riz » y désigne autre chose que le riz en paquet.
+    exclude_keywords: [chorizo, gateau de riz, gâteau de riz, galette, gerblé, gerble,
+                       soufflé, riz au lait, au lait, dessert, repas, express, cuisiné,
+                       plat, soja, céréal, boisson, chips]
     qty_per_run: 1
 
   - id: huile_olive
@@ -91,6 +122,10 @@ items:
     category: epicerie
     unit: L
     keywords: [huile d'olive, huile olive]
+    # « Sardines à l'huile d'olive » est une conserve, pas de l'huile :
+    # la préparation emprunte le nom de l'ingrédient.
+    exclude_keywords: [sardine, thon, maquereau, filet, conserve, boite, boîte,
+                       poisson, rillette, tomate, escabeche, piment]
     qty_per_run: 1
 
   # ---------------- Viande ----------------
@@ -98,7 +133,15 @@ items:
     label: Steak haché
     category: viande
     unit: kg
-    keywords: [steak haché, steak hache, haché 5%]
+    # 5 % ou 15 % MG, frais ou surgelé : le %MG change le prix, à comparer à
+    # taux égal — l'attribut le rend visible dans le rapport.
+    keywords: [steak haché, steak hache, steaks hachés, haché pur bœuf, haché 5%, haché 15%]
+    exclude_keywords: [bacon, burger surgele, wrap, cordon]
+    attribute_rules:
+      mg:
+        "5": [5% mg, 5 % mg, "5%", matière grasse 5]
+        "15": [15% mg, 15 % mg, "15%", matière grasse 15]
+        "20": [20% mg, 20 % mg, "20%"]
     qty_per_run: 1
 
   - id: poulet
@@ -106,6 +149,7 @@ items:
     category: viande
     unit: kg
     keywords: [filet de poulet, escalope de poulet]
+    exclude_keywords: [wrap, sandwich, nuggets, pane, cordon, plat]
     qty_per_run: 1
 
   # ---------------- Animalerie ----------------
@@ -115,7 +159,12 @@ items:
     unit: L
     bulk_worthy: true
     keywords: [litière, litiere]
-    qty_per_run: 1
+    # « Litière rongeurs P'tit Ami 15L » est passée pour une litière chat le
+    # 2026-08-31 : le rayon animalerie mélange les espèces, pas le panier.
+    exclude_keywords: [rongeur, lapin, hamster, gerbille, furet, oiseau,
+                       chinchilla, cochon d'inde, souris]
+    qty_per_run: 10        # un sac de 10 L
+    qty_stock: 30          # en vraie promo, on stocke trois sacs
     # §2.2 : contrainte NON négociable. Une litière hors de ces deux types
     # n'est pas une affaire, c'est un hors-sujet.
     hard_constraints:
@@ -136,7 +185,9 @@ items:
     unit: kg
     bulk_worthy: true
     keywords: [croquettes chat, croquettes]
-    qty_per_run: 1
+    exclude_keywords: [chien, chiot]
+    qty_per_run: 2
+    qty_stock: 9
 
   - id: sacs_litiere
     label: Sacs à litière
@@ -152,7 +203,8 @@ items:
     unit: dose
     bulk_worthy: true
     keywords: [lessive]
-    qty_per_run: 1
+    qty_per_run: 45        # un bidon ou un sac de capsules
+    qty_stock: 90
 
   - id: papier_toilette
     label: Papier toilette
@@ -161,6 +213,7 @@ items:
     bulk_worthy: true
     keywords: [papier toilette, papier hygiénique]
     qty_per_run: 24
+    qty_stock: 48
 
   - id: liquide_vaisselle
     label: Liquide vaisselle
@@ -175,7 +228,8 @@ items:
     unit: L
     bulk_worthy: true
     keywords: [vinaigre blanc, vinaigre ménager]
-    qty_per_run: 1
+    qty_per_run: 5         # le bidon
+    qty_stock: 10
     # Le spray est 3 à 5x plus cher au litre que le bidon : on le refuse.
     hard_constraints:
       - "format not in (spray)"
@@ -190,7 +244,7 @@ items:
     category: droguerie
     unit: m
     keywords: [papier cuisson, papier sulfurisé]
-    qty_per_run: 1
+    qty_per_run: 20       # un rouleau = ~20 m
 
   - id: essuie_tout
     label: Essuie-tout
@@ -229,7 +283,175 @@ items:
     keywords: [bière, biere]
     qty_per_run: 1
 
+  # ============================================================================
+  # Produits intégrés depuis la commande Drive Intermarché du 07/09/2026.
+  # Objectif : suivre chaque BESOIN pour comparer l'équivalent le moins cher
+  # entre enseignes (prix normalisé au kg/L/unité), pas la marque distributeur.
+  # ============================================================================
+
+  # ---------------- Surgelés ----------------
+  - id: pommes_noisettes
+    label: Pommes noisettes
+    category: surgele
+    unit: kg
+    keywords: [pommes noisettes, pomme noisette, pommes de terre noisettes]
+    qty_per_run: 0.9
+
+  - id: frites_surgelees
+    label: Frites au four surgelées
+    category: surgele
+    unit: kg
+    keywords: [frites]
+    # « Pomme de terre de consommation … Frites » en sac de plusieurs kg, ce sont
+    # des patates CRUES (une variété à frire), pas des frites au four surgelées.
+    exclude_keywords: [patate douce, potatoes épicées, pomme de terre de consommation,
+                       colomba, à frire, crue, plant, variété, filet 5kg, filet 2.5kg,
+                       vrac]
+    qty_per_run: 0.75
+
+  - id: epinards_surgeles
+    label: Épinards surgelés
+    category: surgele
+    unit: kg
+    keywords: [épinards, epinards]
+    # Les petits plats pour bébé empruntent le nom du légume.
+    exclude_keywords: [bébé, bebe, mots d'enfants, assiette, dès 18m, dès 12m,
+                       dès 6m, 18 mois, petit pot, purée, quiche, gratin, pizza]
+    qty_per_run: 0.6
+
+  - id: poisson_pane
+    label: Poisson pané (bâtonnets de colin)
+    category: surgele
+    unit: kg
+    keywords: [croustibat, bâtonnets de colin, batonnets de colin, poisson pané,
+               poisson pane, filets panés]
+    qty_per_run: 0.48
+
+  - id: cordon_bleu
+    label: Cordon bleu de volaille
+    category: surgele
+    unit: kg
+    keywords: [cordon bleu, cordons bleus]
+    qty_per_run: 0.4
+
+  # ---------------- Crèmerie / frais ----------------
+  - id: yaourt_nature
+    label: Yaourt nature
+    category: cremerie
+    unit: kg
+    keywords: [yaourt nature, yaourts nature]
+    exclude_keywords: [aromatisé, aromatise, sucré, fruit, grec, brassé, soja, végétal]
+    qty_per_run: 2        # un pack de 16 × 125 g
+
+  - id: cheddar_tranches
+    label: Cheddar en tranches
+    category: cremerie
+    unit: kg
+    keywords: [cheddar, tranchettes]
+    # Les plats préparés empruntent le nom du fromage (wrap, sandwich…) :
+    # on garde « tranchettes pour hamburger », on écarte le traiteur.
+    exclude_keywords: [wrap, sandwich, tacos, panini, croque, plat, salade, box]
+    qty_per_run: 0.2
+
+  - id: pate_pizza
+    label: Pâte à pizza
+    category: cremerie
+    unit: unite
+    keywords: [pâte à pizza, pate a pizza, pâte pizza]
+    qty_per_run: 2
+
+  # ---------------- Épicerie ----------------
+  - id: tomate_conserve
+    label: Tomates en conserve (purée / pelées / concassées)
+    category: conserve
+    unit: kg
+    keywords: [purée de tomates, puree de tomates, chair de tomate, tomates pelées,
+               tomates pelees, tomates concassées, tomates concassees, coulis de tomate,
+               pulpe de tomate]
+    exclude_keywords: [ketchup, sauce pizza, sauce bolognaise, soupe]
+    qty_per_run: 0.6
+
+  - id: legumineuses_conserve
+    label: Légumineuses en conserve (haricots rouges, pois chiches…)
+    category: conserve
+    unit: kg
+    # « net égoutté » : le prix doit se comparer sur le poids égoutté, jamais
+    # sur le poids brut (§5, piège brut vs net).
+    weight_basis_required: true
+    keywords: [haricots rouges, pois chiches, lentilles cuisinées, flageolets,
+               haricots blancs]
+    exclude_keywords: [secs, sèches, seches, sachet, soupe]
+    qty_per_run: 0.5      # deux boîtes de 250 g net
+
+  - id: haricots_verts_conserve
+    label: Haricots verts en conserve
+    category: conserve
+    unit: kg
+    weight_basis_required: true    # net égoutté, comme ci-dessus
+    keywords: [haricots verts]
+    exclude_keywords: [surgelé, surgele, frais]
+    qty_per_run: 0.44
+
+  - id: lait_coco
+    label: Lait de coco
+    category: epicerie
+    unit: L
+    keywords: [lait de coco, lait coco]
+    # La « boisson végétale coco » (ALPRO…) est une brique à boire, pas du lait
+    # de coco de cuisine : produit et prix différents.
+    exclude_keywords: [crème de coco, boisson coco, eau de coco, boisson végétale,
+                       boisson vegetale, végétal, vegetal, à boire, alpro, dessert]
+    qty_per_run: 0.2
+
+  - id: galettes_riz
+    label: Galettes de riz
+    category: epicerie
+    unit: kg
+    keywords: [galettes de riz, galette de riz]
+    qty_per_run: 0.13
+
+  - id: chocolat_noir
+    label: Chocolat noir (tablette)
+    category: epicerie
+    unit: kg
+    keywords: [chocolat noir, tablette chocolat noir]
+    # Galettes de riz Gerblé, barres, céréales « chocolat noir » ne sont pas des
+    # tablettes.
+    exclude_keywords: [pâtissier, patissier, dessert, poudre, chaud, biscuit,
+                       galette, gerblé, gerble, riz soufflé, soufflé, barre, céréale,
+                       cookie, mousse, crème]
+    qty_per_run: 0.1
+
+  # ---------------- Boulangerie ----------------
+  - id: pain_de_mie
+    label: Pain de mie
+    category: boulangerie
+    unit: kg
+    keywords: [pain de mie]
+    qty_per_run: 0.9
+
+  - id: pain_burger
+    label: Pains burger
+    category: boulangerie
+    unit: unite
+    keywords: [pain burger, pains burger, buns, pain hamburger]
+    qty_per_run: 4
+
   # ---------------- Fruits & légumes : hors périmètre drive (§10) ----------------
+  # Sachets frais achetés au drive (laitue lavée, herbe fraîche) : comparables
+  # d'une enseigne à l'autre, donc suivis (pas out_of_scope).
+  - id: laitue_sachet
+    label: Laitue prête à l'emploi (sachet)
+    category: fl
+    unit: kg
+    keywords: [cœur de laitue, coeur de laitue, laitue prête, salade prête, mâche, roquette sachet]
+    qty_per_run: 0.2
+  - id: herbes_fraiches
+    label: Herbes fraîches (coriandre, persil…)
+    category: fl
+    unit: unite
+    keywords: [coriandre, persil frais, basilic frais, ciboulette, aneth, menthe]
+    qty_per_run: 1
   - id: tomate
     label: Tomates
     category: fl
@@ -289,3 +511,20 @@ items:
 
 # Magasins conseillés pour les articles hors périmètre drive.
 out_of_scope_stores: [grandfrais_tregueux]
+
+# Marqueurs de plats préparés / alimentation bébé : un libellé qui en contient
+# ne désigne jamais un ingrédient brut du panier. Écartés AVANT tout
+# rattachement (évite qu'une « assiette bébé carottes-pâtes-épinards » soit
+# prise pour des pâtes, ou un « wrap poulet cheddar » pour du cheddar).
+global_exclude_keywords:
+  - mots d'enfants
+  - dès 18m
+  - dès 12m
+  - dès 6m
+  - dès 4m
+  - 18 mois
+  - petit pot
+  - bébé
+  - repas express
+  - repas bébé
+  - assiette mots

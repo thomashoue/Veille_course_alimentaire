@@ -142,8 +142,30 @@ def build_offers(
             check = ledger.check_record(obs, config)
             offer.is_record = check.is_record
             offer.previous_best = check.previous_best
+            _tag_promo(offer, obs, config, ledger)
         (offers if is_reportable(verdict, obs) else pistes).append(offer)
     return offers, pistes
+
+
+def _tag_promo(offer: Offer, obs: PriceObservation, config: Config, ledger: Ledger) -> None:
+    """Note l'écart au prix habituel (médiane historique) : le score « promo »."""
+    price = obs.best_unit_price
+    if price is None or not obs.verified_in_drive:
+        return
+    item = config.items.get(obs.basket_item_id)
+    attribute_filter = None
+    if item is not None and item.attribute_rules:
+        key = next(iter(item.attribute_rules))
+        value = obs.attributes.get(key)
+        if value:
+            attribute_filter = (key, value)
+    habit = ledger.habitual_price(
+        obs.basket_item_id, attribute_filter=attribute_filter, exclude_id=obs.id
+    )
+    if not habit or habit["median"] <= 0:
+        return
+    offer.habitual_price = habit["median"]
+    offer.promo_pct = (habit["median"] - price) / habit["median"] * 100.0
 
 
 def build_drive_clients(
@@ -179,6 +201,7 @@ def run(
     manual_file: Path | str | None = None,
     pickup_date: date | None = None,
     use_drive: bool = True,
+    collect_sources: bool | None = None,
     offline: bool = False,
     headless: bool = True,
     fixtures: dict[str, dict[str, list[DriveProduct]]] | None = None,
@@ -193,7 +216,12 @@ def run(
     if not collected:
         if manual_file:
             collected += load_observations(manual_file, config)
-        collected += collect(config, item_ids, offline=offline)
+        # Fournir des relevés est un acte délibéré : on n'y ajoute une collecte
+        # réseau (plusieurs minutes) que si elle est demandée explicitement.
+        if collect_sources is None:
+            collect_sources = not collected
+        if collect_sources:
+            collected += collect(config, item_ids, offline=offline)
 
     kept, _ = shortlist(collected, config, pickup_date)
 
@@ -214,6 +242,7 @@ def run(
     report = build_report(
         plan,
         config,
+        offers=offers,
         pistes=pistes,
         observed_item_ids={o.basket_item_id for o in collected},
         pickup_date=pickup_date,

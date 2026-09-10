@@ -126,3 +126,21 @@ class TestSourcesInterdites:
         fetcher = Fetcher(config, offline=True)
         fetcher.respect_robots = False        # pas de réseau dans les tests
         fetcher.check_url("https://www.promocatalogues.fr/offres/lait/")
+
+
+class TestCoupeCircuit:
+    """Un hôte injoignable ne doit pas être interrogé 200 fois dans un run."""
+
+    def test_hote_ecarte_apres_trois_echecs(self, config):
+        fetcher = Fetcher(config, offline=True)
+        fetcher.respect_robots = False
+        url = "https://www.promocatalogues.fr/offres/lait/"
+        fetcher._failures["www.promocatalogues.fr"] = 3
+        with pytest.raises(SourceBlocked, match="échecs consécutifs"):
+            fetcher.check_url(url)
+
+    def test_les_autres_hotes_restent_ouverts(self, config):
+        fetcher = Fetcher(config, offline=True)
+        fetcher.respect_robots = False
+        fetcher._failures["www.promocatalogues.fr"] = 3
+        fetcher.check_url("https://www.vos-promos.fr/produits/lait")

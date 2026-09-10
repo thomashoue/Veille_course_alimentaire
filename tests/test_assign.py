@@ -31,13 +31,13 @@ class TestAffectation:
     def test_chaque_magasin_va_a_la_bonne_personne(self, config):
         offers = [
             make_offer(config, "leclerc_pleumeleuc", "lait_demi_ecreme", "Lait 6x1L", 4.80, 2.0),
-            make_offer(config, "superu_yffiniac", "cafe", "Café 1 kg", 8.00, 3.0),
+            make_offer(config, "hyperu_yffiniac", "cafe", "Café 1 kg", 8.00, 3.0),
             make_offer(config, "intermarche_montauban", "pates", "Pâtes 1 kg", 1.20, 1.0),
         ]
         plan = assign(offers, config)
         par_personne = {b.store.id: b.assignee for b in plan.baskets}
         assert par_personne["leclerc_pleumeleuc"] == "charlotte"
-        assert par_personne["superu_yffiniac"] == "thomas"
+        assert par_personne["hyperu_yffiniac"] == "thomas"
         assert par_personne["intermarche_montauban"] == "household"
 
     def test_le_meilleur_prix_gagne(self, config):
@@ -51,6 +51,45 @@ class TestAffectation:
         offer = make_offer(config, "intermarche_montauban", "pates", "Pâtes 1 kg", 1.20, 0.05)
         plan = assign([offer], config)
         assert [b.store.id for b in plan.baskets] == ["intermarche_montauban"]
+
+
+class TestGainReel:
+    """La ligne « gain réel » : meilleur magasin unique vs éclaté."""
+
+    def _offer(self, config, store_id, item_id, price, pack_kg):
+        from src.models import PriceObservation
+        from src.normalize import normalize
+        obs = PriceObservation(
+            store_id=store_id, basket_item_id=item_id, product_label=f"{item_id} {pack_kg}kg",
+            price_eur=price, pack_size=pack_kg, pack_unit="kg", pack_count=1,
+            verified_in_drive=True,
+        )
+        normalize(obs, config)
+        return Offer(observation=obs, item=config.item(item_id), verdict=OK(),
+                     grade=Grade.GOOD, saving_eur=0.0)
+
+    def test_gain_eclatement_vs_magasin_unique(self, config):
+        # riz : Leclerc 3 €/kg, Hyper U 4 €/kg  → Leclerc gagne (qty 1 kg)
+        # pâtes : Leclerc 5 €/kg, Hyper U 2 €/kg → Hyper U gagne (qty 2 kg)
+        offers = [
+            self._offer(config, "leclerc_pleumeleuc", "riz", 3.0, 1.0),
+            self._offer(config, "hyperu_yffiniac", "riz", 4.0, 1.0),
+            self._offer(config, "leclerc_pleumeleuc", "pates", 5.0, 1.0),
+            self._offer(config, "hyperu_yffiniac", "pates", 2.0, 1.0),
+        ]
+        cost = assign(offers, config).cost
+        assert cost is not None and cost.n_items == 2
+        # éclaté : riz 3×1 + pâtes 2×2 = 7 ; meilleur unique = Hyper U (4 + 2×2 = 8)
+        assert cost.split_total == pytest.approx(7.0)
+        assert cost.best_single_store == "hyperu_yffiniac"
+        assert cost.best_single_total == pytest.approx(8.0)
+        assert cost.real_gain == pytest.approx(1.0)
+
+    def test_un_seul_magasin_aucun_gain(self, config):
+        offers = [self._offer(config, "intermarche_montauban", "riz", 2.0, 1.0)]
+        cost = assign(offers, config).cost
+        assert cost.real_gain == pytest.approx(0.0)
+        assert cost.best_single_covers_all is True
 
 
 class TestDetour:
@@ -126,3 +165,27 @@ class TestOffreReportee:
                            "Litière charbon actif 5 L", 4.59, saving=0.15)
         plan = assign([offer], config)
         assert "minimum" in plan.dropped[0].drop_reason
+
+
+class TestCoutOpportunite:
+    """Le détour se juge sur ce qu'on perdrait ailleurs, pas sur l'écart au seuil.
+
+    Bug révélé par un test 3 enseignes : le café (sans seuil) était 1,20 € moins
+    cher chez U, ce qui amortit largement 3 km, mais l'ancien calcul fermait U
+    parce que son « économie vs seuil » était nulle.
+    """
+
+    def test_un_magasin_sans_affaire_mais_moins_cher_vaut_le_detour(self, config):
+        # Café sans seuil : 8,40 € chez U (détour), 9,60 € chez Leclerc (sur trajet).
+        u = make_offer(config, "hyperu_yffiniac", "cafe", "Café U 1kg", 8.40, saving=0.0)
+        leclerc = make_offer(config, "leclerc_pleumeleuc", "cafe", "Café 1kg", 9.60, saving=0.0)
+        plan = assign([u, leclerc], config)
+        retenus = {b.store.id for b in plan.baskets}
+        assert "hyperu_yffiniac" in retenus       # 1,20 € > coût de 3 km
+
+    def test_ecart_trop_faible_ne_justifie_pas(self, config):
+        # 10 centimes d'écart sur un article : le détour de 3 km ne se paie pas.
+        u = make_offer(config, "hyperu_yffiniac", "cafe", "Café U 1kg", 9.50, saving=0.0)
+        leclerc = make_offer(config, "leclerc_pleumeleuc", "cafe", "Café 1kg", 9.60, saving=0.0)
+        plan = assign([u, leclerc], config)
+        assert "hyperu_yffiniac" not in {b.store.id for b in plan.baskets}

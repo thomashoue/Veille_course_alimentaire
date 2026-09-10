@@ -27,6 +27,24 @@ GRADE_MARK = {
 }
 
 
+def best_promos(offers: list[Offer], config: Config, min_pct: float | None = None) -> list[Offer]:
+    """Les vraies promos : prix nettement SOUS l'habituel (médiane historique).
+
+    Un seul relevé par article (le plus bas), classés par écart décroissant.
+    Renvoie une liste vide tant que l'historique est trop court pour connaître
+    une habitude (``promo_pct`` reste alors None).
+    """
+    floor = float(config.param("promo_min_pct", 5.0)) if min_pct is None else float(min_pct)
+    best_by_item: dict[str, Offer] = {}
+    for offer in offers:
+        if offer.promo_pct is None or offer.promo_pct < floor:
+            continue
+        current = best_by_item.get(offer.item.id)
+        if current is None or offer.promo_pct > (current.promo_pct or 0):
+            best_by_item[offer.item.id] = offer
+    return sorted(best_by_item.values(), key=lambda o: o.promo_pct or 0, reverse=True)
+
+
 @dataclass
 class Report:
     markdown: str
@@ -93,7 +111,12 @@ def _basket_section(basket: StoreBasket) -> list[str]:
         "",
     ]
     if basket.store.has_drive and basket.store.drive_base_url:
-        lines += [f"Drive : {basket.store.drive_base_url}", ""]
+        drive_line = f"Drive : {basket.store.drive_base_url}"
+        if basket.store.min_order_eur:
+            drive_line += (
+                f" · ⚠ minimum de commande {format_eur(basket.store.min_order_eur)}"
+            )
+        lines += [drive_line, ""]
     else:
         lines += ["*Pas de drive : liste papier, achat en magasin.*", ""]
     lines += [_offer_line(offer) for offer in basket.offers]
@@ -105,6 +128,7 @@ def build_report(
     plan: Plan,
     config: Config,
     *,
+    offers: list[Offer] | None = None,
     pistes: list[Offer] | None = None,
     observed_item_ids: set[str] | None = None,
     generated_at: datetime | None = None,
@@ -112,13 +136,35 @@ def build_report(
 ) -> Report:
     """Assemble le compte rendu à partir du plan d'affectation."""
     now = generated_at or datetime.now()
-    lines: list[str] = [
-        f"# Veille courses — {now:%A %d %B %Y %Hh%M}",
-        "",
-        f"Économie estimée : **{format_eur(plan.total_saving)}** · "
-        f"gain net après carburant : **{format_eur(plan.total_net_gain)}**",
-        "",
-    ]
+    lines: list[str] = [f"# Veille courses — {now:%A %d %B %Y %Hh%M}", ""]
+    promos = best_promos(offers, config) if offers else []
+    if promos:
+        lines += ["## 🔥 Meilleures promos (sous votre prix habituel)", ""]
+        for offer in promos:
+            unit = offer.observation.unit_price_unit or ""
+            lines.append(
+                f"- **{offer.item.label} −{offer.promo_pct:.0f} %** — "
+                f"{format_price(offer.unit_price, unit)} chez "
+                f"{config.store(offer.store_id).name} "
+                f"(habituel {format_price(offer.habitual_price, unit)})"
+            )
+        lines.append("")
+    cost = plan.cost
+    if cost and cost.best_single_store:
+        store_name = config.store(cost.best_single_store).name
+        etoile = "\\*" if not cost.best_single_covers_all else ""
+        lines += [
+            f"Panier comparé sur **{cost.n_items} articles** (prix normalisé × quantité) :",
+            "",
+            f"- Tout au même magasin (le moins cher : {store_name}{etoile}) : "
+            f"**{format_eur(cost.best_single_total)}**",
+            f"- Au meilleur prix, magasin par magasin : **{format_eur(cost.split_total)}**",
+            f"- **Gain réel de l'éclatement : {format_eur(cost.real_gain)}** "
+            f"({cost.real_gain_pct:.0f} %)",
+            "",
+        ]
+    else:
+        lines += [f"Économie estimée : **{format_eur(plan.total_saving)}**", ""]
     if pickup_date:
         lines += [f"Date de retrait retenue pour les avantages carte : **{pickup_date:%d/%m/%Y}**", ""]
 
@@ -201,10 +247,11 @@ def build_report(
 
     if pistes:
         lines += [
-            "## Pistes non vérifiées en drive",
+            "## À vérifier avant achat",
             "",
-            "*Le catalogue n'est pas l'assortiment du drive : ces prix ne sont "
-            "pas actionnables tant qu'ils n'ont pas été vus dans le drive.*",
+            "*Rien ici n'est achetable les yeux fermés : piste de catalogue "
+            "jamais confirmée en drive, contrainte invérifiable sur le "
+            "libellé, ou prix incohérent à la lecture.*",
             "",
         ]
         for offer in pistes:

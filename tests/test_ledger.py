@@ -69,3 +69,41 @@ class TestHistorique:
         ledger.finish_run(run_id, 12, 3, "ok")
         row = ledger.conn.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone()
         assert row["n_offers"] == 3
+
+
+class TestHabitualPrice:
+    def test_pas_d_habitude_sous_le_minimum(self, config, ledger):
+        # 2 relevés seulement : pas encore une habitude connue.
+        ledger.record(obs_at(config, 4.59))
+        ledger.record(obs_at(config, 4.70))
+        assert ledger.habitual_price("litiere_chat", min_n=3) is None
+
+    def test_mediane_apres_assez_de_releves(self, config, ledger):
+        for p in (4.50, 4.60, 4.80):        # normalisés : /5 L
+            ledger.record(obs_at(config, p))
+        habit = ledger.habitual_price("litiere_chat", min_n=3)
+        assert habit is not None and habit["n"] == 3
+        # médiane du milieu (4,60/5 L), robuste aux extrêmes
+        assert habit["median"] == pytest.approx(4.60 / 5.0)
+
+
+class TestPromos:
+    def test_promo_classee_sous_le_prix_habituel(self, config, ledger):
+        from src.pipeline import build_offers
+        from src.report import best_promos
+        for p in (5.00, 5.10, 4.90):        # habitude ~5 €/5 L
+            ledger.record(obs_at(config, p))
+        promo = obs_at(config, 3.50)        # nettement moins cher
+        offers, _ = build_offers([promo], config, ledger)
+        best = best_promos(offers, config)
+        assert best and best[0].item.id == "litiere_chat"
+        assert best[0].promo_pct > 20        # ~30 % sous l'habituel
+
+    def test_prix_normal_pas_liste(self, config, ledger):
+        from src.pipeline import build_offers
+        from src.report import best_promos
+        for p in (5.00, 5.10, 4.90):
+            ledger.record(obs_at(config, p))
+        normal = obs_at(config, 5.05)
+        offers, _ = build_offers([normal], config, ledger)
+        assert best_promos(offers, config) == []

@@ -202,6 +202,44 @@ class Ledger:
             previous_date=previous["observed_at"][:10],
         )
 
+    def habitual_price(
+        self,
+        basket_item_id: str,
+        *,
+        attribute_filter: tuple[str, str] | None = None,
+        weeks: int = 26,
+        min_n: int = 3,
+        exclude_id: str | None = None,
+    ) -> dict[str, float] | None:
+        """Prix « habituel » = médiane des prix passés (robuste aux promos).
+
+        Sert de référence pour dire « −22 % vs ton prix habituel ». On exige au
+        moins ``min_n`` relevés pour ne pas prendre une seule observation pour
+        une habitude — sinon on renvoie ``None`` (pas encore d'habitude connue).
+        """
+        cutoff = (datetime.now() - timedelta(weeks=weeks)).isoformat()
+        query = [
+            "SELECT effective_unit_price AS p, attributes FROM observations",
+            "WHERE basket_item_id = ? AND effective_unit_price IS NOT NULL",
+            "AND verified_in_drive = 1 AND observed_at >= ?",
+        ]
+        params: list[object] = [basket_item_id, cutoff]
+        if exclude_id:
+            query.append("AND id != ?")
+            params.append(exclude_id)
+        with closing(self.conn.cursor()) as cur:
+            rows = cur.execute(" ".join(query), params).fetchall()
+
+        if attribute_filter:
+            key, value = attribute_filter
+            rows = [r for r in rows if json.loads(r["attributes"] or "{}").get(key) == value]
+        prices = sorted(float(r["p"]) for r in rows)
+        if len(prices) < min_n:
+            return None
+        mid = len(prices) // 2
+        median = prices[mid] if len(prices) % 2 else (prices[mid - 1] + prices[mid]) / 2.0
+        return {"median": median, "n": float(len(prices))}
+
     # ------------------------------------------------------------------ #
     def history(self, basket_item_id: str, limit: int = 50) -> list[sqlite3.Row]:
         with closing(self.conn.cursor()) as cur:

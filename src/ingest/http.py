@@ -53,6 +53,11 @@ class Fetcher:
         self.session.headers.update({"User-Agent": self.user_agent, "Accept-Language": "fr-FR"})
         self._robots: dict[str, urllib.robotparser.RobotFileParser] = {}
         self._last_request = 0.0
+        # Coupe-circuit : un run interroge ~200 URL. Si un hôte est injoignable,
+        # le marteler avec 3 tentatives et un backoff exponentiel chacune fait
+        # durer le run des minutes pour rien.
+        self._failures: dict[str, int] = {}
+        self.failure_threshold = int(http.get("host_failure_threshold", 3))
 
     # ------------------------------------------------------------------ #
     def check_url(self, url: str) -> None:
@@ -64,6 +69,10 @@ class Fetcher:
                 raise SourceBlocked(f"{host} en deny-list ({reason})")
         if self.allow and not any(host == a or host.endswith("." + a) for a in self.allow):
             raise SourceBlocked(f"{host} hors allow-list")
+        if self._failures.get(host, 0) >= self.failure_threshold:
+            raise SourceBlocked(
+                f"{host} écarté pour ce run : {self._failures[host]} échecs consécutifs"
+            )
         if self.respect_robots and not self._robots_allow(url):
             raise SourceBlocked(f"{url} interdit par robots.txt")
 
@@ -104,8 +113,9 @@ class Fetcher:
 
     # ------------------------------------------------------------------ #
     def get(self, url: str, use_cache: bool = True) -> Response:
-        """GET avec cache disque, throttling et backoff exponentiel."""
+        """GET avec cache disque, throttling, backoff et coupe-circuit par hôte."""
         self.check_url(url)
+        host = (urlparse(url).hostname or "").lower()
         if use_cache:
             cached = self._read_cache(url)
             if cached is not None:
@@ -123,6 +133,7 @@ class Fetcher:
                 time.sleep(2**attempt)
                 continue
             if response.status_code == 200:
+                self._failures.pop(host, None)
                 self._cache_path(url).write_text(response.text, encoding="utf-8")
                 return Response(url, 200, response.text)
             if response.status_code in (403, 404, 410):
@@ -132,5 +143,9 @@ class Fetcher:
             last_error = RuntimeError(f"HTTP {response.status_code}")
             time.sleep(2**attempt)
 
-        log.warning("échec après %s tentatives sur %s : %s", self.max_retries, url, last_error)
+        self._failures[host] = self._failures.get(host, 0) + 1
+        log.warning(
+            "échec après %s tentatives sur %s : %s (%s échec(s) pour cet hôte)",
+            self.max_retries, url, last_error, self._failures[host],
+        )
         return Response(url, 0, "")
