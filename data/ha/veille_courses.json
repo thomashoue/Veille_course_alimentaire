@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "genere_le": "2026-10-23T18:38:00+02:00",
+  "semaine_du": "2026-10-26",
+  "resume": "15 des 31 articles de la liste ont une promo cette semaine, 4 records. Premier relevé : le comparatif ne contient que les prix vus dans le compte rendu du 23/10, les autres cases sont vides.",
+  "enseignes": {
+    "leclerc": "Leclerc Pleumeleuc",
+    "intermarche": "Intermarché Montauban",
+    "superu": "Super U Breteil"
+  },
+  "comparatif": [
+    {"produit": "Lait demi-écrémé", "format": "6 x 1 L", "unite": "L",
+     "leclerc": null,
+     "intermarche": {"prix": 5.08, "pu": 0.85, "promo": true, "fin": "2026-11-01", "libelle": "Pâturages UHT 6x1 L"},
+     "superu": null,
+     "moins_cher": "intermarche", "record_pu": 0.85},
+    {"produit": "Emmental râpé", "format": "500 g", "unite": "kg",
+     "leclerc": null,
+     "intermarche": {"prix": 2.82, "pu": 5.64, "promo": true, "fin": "2026-11-01", "libelle": "Pâturages 500 g"},
+     "superu": null,
+     "moins_cher": "intermarche", "record_pu": 5.64},
+    {"produit": "Œufs", "format": "par 15 à 20", "unite": "unite",
+     "leclerc": {"prix": 2.90, "pu": 0.193, "promo": true, "fin": "2026-10-31", "libelle": "Matines x15"},
+     "intermarche": null,
+     "superu": null,
+     "moins_cher": "leclerc", "record_pu": 0.171},
+    {"produit": "Croquettes chat stérilisé", "format": "1,4 kg", "unite": "kg",
+     "leclerc": null,
+     "intermarche": null,
+     "superu": {"prix": 4.02, "pu": 2.87, "promo": true, "fin": "2026-11-01", "libelle": "Perfect Fit 1,4 kg"},
+     "moins_cher": "superu", "record_pu": 2.45},
+    {"produit": "Lessive liquide", "format": "2,25 L / 50 lavages", "unite": "lavage",
+     "leclerc": null,
+     "intermarche": null,
+     "superu": {"prix": 5.74, "pu": 0.115, "promo": true, "fin": "2026-11-01", "libelle": "Bonux 2,25 L"},
+     "moins_cher": "superu", "record_pu": 0.115},
+    {"produit": "Pomme", "format": "vrac", "unite": "kg",
+     "leclerc": null,
+     "intermarche": {"prix": 1.39, "pu": 1.39, "promo": true, "fin": "2026-11-01", "libelle": "Pomme"},
+     "superu": null,
+     "moins_cher": "intermarche", "record_pu": null}
+  ],
+  "opportunites": [
+    {"titre": "Emmental râpé Pâturages 500 g", "magasin": "Intermarché Montauban", "qui": "maison", "prix": 2.82, "pu": 5.64, "unite": "kg", "fin": "2026-11-01", "niveau": "record", "alerte": true, "note": "habituel 4,03 €, -30 %"},
+    {"titre": "Lait Pâturages 6 x 1 L", "magasin": "Intermarché Montauban", "qui": "maison", "prix": 5.08, "pu": 0.85, "unite": "L", "fin": "2026-11-01", "niveau": "record", "alerte": true, "note": "habituel 6,36 €"},
+    {"titre": "Sardines Goelette 125 g", "magasin": "Aldi Ploufragan", "qui": "thomas", "prix": 1.15, "pu": 9.20, "unite": "kg", "fin": "2026-10-26", "niveau": "bon", "alerte": true, "note": "seule offre sardine, en pénurie"},
+    {"titre": "20 œufs au sol", "magasin": "Netto Langueux", "qui": "thomas", "prix": 3.41, "pu": 0.171, "unite": "unite", "fin": "2026-11-09", "niveau": "record", "alerte": true, "note": "dès le 27/10"},
+    {"titre": "Mozzarella Milbona 400 g", "magasin": "Lidl Ploufragan", "qui": "thomas", "prix": 1.90, "pu": 4.75, "unite": "kg", "fin": "2026-10-28", "niveau": "record", "alerte": true, "note": null},
+    {"titre": "Blanc de poulet Le Marsigny 320 g", "magasin": "Aldi Ploufragan", "qui": "thomas", "prix": 2.99, "pu": 9.34, "unite": "kg", "fin": null, "niveau": "bon", "alerte": false, "note": "dès le 27/10, sous 10 €/kg"},
+    {"titre": "Lessive Bonux 2,25 L (50 lavages)", "magasin": "Super U Breteil", "qui": "charlotte", "prix": 5.74, "pu": 0.115, "unite": "lavage", "fin": "2026-11-01", "niveau": "record", "alerte": false, "note": "activer les 10 % fruits-légumes et charcuterie dans l'appli U"},
+    {"titre": "Croquettes Perfect Fit 1,4 kg", "magasin": "Super U Breteil", "qui": "charlotte", "prix": 4.02, "pu": 2.87, "unite": "kg", "fin": "2026-11-01", "niveau": "bon", "alerte": false, "note": "un cran sous Ultima"}
+  ]
+}
