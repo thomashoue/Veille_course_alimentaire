@@ -1,75 +1,39 @@
 {
   "version": 1,
-  "genere_le": "2026-11-20T17:30:00+01:00",
-  "semaine_du": "2026-11-23",
-  "resume": "Semaine contrastée : cinq records ou records égalés, mais tout le poisson, les croquettes, la litière et les fruits et légumes hors pomme restent à zéro. Le coup de cœur est la lessive Génie à 0,0907 €/lavage à Montauban, sans détour et jusqu'au 29/11. Côté mécaniques, un seul levier : le 10 % en € Carte U dès 15 € de produits U chez Super U, avec retrait drive le MARDI 24 novembre, dernier mardi de l'opération.",
+  "genere_le": "2026-11-27T19:05:00+01:00",
+  "semaine_du": "2026-11-30",
+  "resume": "Semaine moyenne, et elle se joue presque entierement sur le trajet de Thomas : trois records chez Aldi et Lidl (lardons 6,90 euros/kg, buche de chevre 9,38 euros/kg, poire 1,79 euros/kg) plus le 2e meilleur cafe en grains jamais releve a 12,64 euros/kg. A Montauban, le jambon cuit a l'etouffee 1 kg a 8,96 euros/kg court toute la semaine sans detour. Deux mauvaises nouvelles : le record lessive Genie a 0,0907 euros/lavage meurt dimanche 29/11 sans remplacant, et Leclerc Pleumeleuc n'a rien du tout. Pour Charlotte, un seul levier : chez Super U, l'operation Special Produits U est reconduite du 01 au 29/12, soit 10 pour cent reverses en euros Carte U des 15 euros de produits U, a condition que le retrait drive tombe un MARDI, donc le 01/12.",
   "enseignes": {
     "leclerc": "Leclerc Pleumeleuc",
-    "intermarche": "Intermarché Montauban",
+    "intermarche": "Intermarche Montauban",
     "superu": "Super U Breteil"
   },
   "comparatif": [
     {
-      "produit": "Œufs",
-      "format": "format non précisé",
+      "produit": "Oeufs",
+      "format": "boite de 12",
       "unite": "unite",
       "leclerc": {
-        "prix": 2.57,
-        "pu": null,
-        "promo": true,
+        "prix": 2.77,
+        "pu": 0.23,
+        "promo": false,
         "fin": null,
-        "libelle": "Matines œufs frais plein air, au lieu de 3,90 €, format non publié"
+        "libelle": "De Nos Regions x12, prix courant drive"
       },
-      "intermarche": null,
+      "intermarche": {
+        "prix": 2.86,
+        "pu": 0.238,
+        "promo": false,
+        "fin": null,
+        "libelle": "Matines x12, prix courant drive"
+      },
       "superu": null,
-      "moins_cher": null,
+      "moins_cher": "leclerc",
       "record_pu": 0.171
     },
     {
       "produit": "Parmesan",
-      "format": "format non précisé",
-      "unite": "kg",
-      "leclerc": null,
-      "intermarche": null,
-      "superu": null,
-      "moins_cher": null,
-      "record_pu": 21.17
-    },
-    {
-      "produit": "Yaourt à boire",
-      "format": "format non précisé",
-      "unite": "kg",
-      "leclerc": null,
-      "intermarche": null,
-      "superu": null,
-      "moins_cher": null,
-      "record_pu": 1.59
-    },
-    {
-      "produit": "Gruyère",
-      "format": "1 kg",
-      "unite": "kg",
-      "leclerc": null,
-      "intermarche": {
-        "prix": 23.9,
-        "pu": 23.9,
-        "promo": true,
-        "fin": "2026-11-29",
-        "libelle": "LE GRUYÈRE Réserve AOP 1 kg — plafond du marché, à éviter"
-      },
-      "superu": {
-        "prix": 25.99,
-        "pu": null,
-        "promo": true,
-        "fin": "2026-12-06",
-        "libelle": "Gruyère AOP, format non précisé — au-dessus du marché"
-      },
-      "moins_cher": "intermarche",
-      "record_pu": 16.75
-    },
-    {
-      "produit": "Tomate séchée",
-      "format": "format non précisé",
+      "format": "non releve",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -78,18 +42,60 @@
       "record_pu": null
     },
     {
-      "produit": "Fromage de chèvre",
-      "format": "200 g",
+      "produit": "Yaourt a boire",
+      "format": "850 g",
+      "unite": "kg",
+      "leclerc": null,
+      "intermarche": null,
+      "superu": {
+        "prix": 2.45,
+        "pu": 2.88,
+        "promo": true,
+        "fin": "2026-12-06",
+        "libelle": "YOP 850 g, remise affichee non fiable"
+      },
+      "moins_cher": null,
+      "record_pu": 1.59
+    },
+    {
+      "produit": "Gruyere",
+      "format": "format non precise",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
       "superu": null,
       "moins_cher": null,
-      "record_pu": 7.55
+      "record_pu": 16.75
+    },
+    {
+      "produit": "Tomate sechee",
+      "format": "aucune offre",
+      "unite": "kg",
+      "leclerc": null,
+      "intermarche": null,
+      "superu": null,
+      "moins_cher": null,
+      "record_pu": null
+    },
+    {
+      "produit": "Fromage de chevre",
+      "format": "buche 180 g",
+      "unite": "kg",
+      "leclerc": null,
+      "intermarche": {
+        "prix": 2.05,
+        "pu": 11.39,
+        "promo": false,
+        "fin": null,
+        "libelle": "President buche 180 g, repere prix courant"
+      },
+      "superu": null,
+      "moins_cher": null,
+      "record_pu": 9.38
     },
     {
       "produit": "Yaourt nature",
-      "format": "format non précisé",
+      "format": "aucune offre",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -99,7 +105,7 @@
     },
     {
       "produit": "Petit suisse",
-      "format": "format non précisé",
+      "format": "aucune offre",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -109,17 +115,23 @@
     },
     {
       "produit": "Salade",
-      "format": "format non précisé",
+      "format": "iceberg a la piece",
       "unite": "piece",
       "leclerc": null,
       "intermarche": null,
-      "superu": null,
+      "superu": {
+        "prix": 0.95,
+        "pu": null,
+        "promo": true,
+        "fin": "2026-12-06",
+        "libelle": "Iceberg, format annonce 250 g non fiable"
+      },
       "moins_cher": null,
       "record_pu": null
     },
     {
       "produit": "Courgette",
-      "format": "format non précisé",
+      "format": "aucune offre dans les 3 drives",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -129,17 +141,17 @@
     },
     {
       "produit": "Tomate",
-      "format": "format non précisé",
+      "format": "aucune offre, 3e semaine",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
       "superu": null,
       "moins_cher": null,
-      "record_pu": 2.0
+      "record_pu": null
     },
     {
       "produit": "Avocat",
-      "format": "à la pièce",
+      "format": "aucune offre dans les 3 drives",
       "unite": "piece",
       "leclerc": null,
       "intermarche": null,
@@ -148,18 +160,24 @@
       "record_pu": 0.65
     },
     {
-      "produit": "Truite fumée",
-      "format": "format non précisé",
+      "produit": "Truite fumee",
+      "format": "180 g",
       "unite": "kg",
       "leclerc": null,
-      "intermarche": null,
+      "intermarche": {
+        "prix": 6.99,
+        "pu": 38.83,
+        "promo": true,
+        "fin": "2026-12-13",
+        "libelle": "Delpeyrat 180 g, bien au-dessus du repere"
+      },
       "superu": null,
       "moins_cher": null,
       "record_pu": 21.58
     },
     {
       "produit": "Prune",
-      "format": "hors saison",
+      "format": "format non precise",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -169,17 +187,23 @@
     },
     {
       "produit": "Poire",
-      "format": "1 kg",
+      "format": "sac 1 kg",
       "unite": "kg",
       "leclerc": null,
-      "intermarche": null,
+      "intermarche": {
+        "prix": 1.99,
+        "pu": 1.99,
+        "promo": true,
+        "fin": "2026-12-13",
+        "libelle": "Poires de France 1 kg"
+      },
       "superu": null,
       "moins_cher": null,
       "record_pu": 1.79
     },
     {
       "produit": "Figue",
-      "format": "hors saison",
+      "format": "hors saison, aucune offre",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -188,8 +212,24 @@
       "record_pu": null
     },
     {
+      "produit": "Banane",
+      "format": "1 kg",
+      "unite": "kg",
+      "leclerc": null,
+      "intermarche": {
+        "prix": 0.95,
+        "pu": 0.95,
+        "promo": true,
+        "fin": "2026-12-13",
+        "libelle": "Banane 1 kg"
+      },
+      "superu": null,
+      "moins_cher": null,
+      "record_pu": 0.79
+    },
+    {
       "produit": "Lardon",
-      "format": "500 g",
+      "format": "aucune offre dans les 3 drives",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -199,43 +239,49 @@
     },
     {
       "produit": "Poulet",
-      "format": "poulet fermier Label Rouge 1,4 kg",
+      "format": "filet frais",
       "unite": "kg",
-      "leclerc": null,
+      "leclerc": {
+        "prix": 3.9,
+        "pu": 13.0,
+        "promo": false,
+        "fin": null,
+        "libelle": "Volandrie 300 g, prix courant drive"
+      },
       "intermarche": {
-        "prix": 7.99,
-        "pu": 5.71,
-        "promo": true,
-        "fin": "2026-11-29",
-        "libelle": "Label Rouge poulet fermier IGP 1,4 kg"
+        "prix": 5.08,
+        "pu": 18.15,
+        "promo": false,
+        "fin": null,
+        "libelle": "La Nouvelle Agriculture 280 g, prix courant drive"
       },
       "superu": null,
-      "moins_cher": "intermarche",
-      "record_pu": 3.29
+      "moins_cher": "leclerc",
+      "record_pu": 7.99
     },
     {
       "produit": "Lait de coco",
-      "format": "format non précisé",
+      "format": "aucune offre confirmee",
       "unite": "L",
       "leclerc": null,
       "intermarche": null,
       "superu": null,
       "moins_cher": null,
-      "record_pu": null
+      "record_pu": 1.96
     },
     {
       "produit": "Pesto",
-      "format": "format non précisé",
+      "format": "aucune offre",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
       "superu": null,
       "moins_cher": null,
-      "record_pu": null
+      "record_pu": 5.42
     },
     {
       "produit": "Sardine",
-      "format": "format non précisé",
+      "format": "aucune offre, penurie",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -245,7 +291,7 @@
     },
     {
       "produit": "Cerneaux de noix",
-      "format": "format non précisé",
+      "format": "aucune offre",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -254,8 +300,8 @@
       "record_pu": null
     },
     {
-      "produit": "Graines d'amande",
-      "format": "500 g",
+      "produit": "Graine amande",
+      "format": "aucune offre",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -265,24 +311,18 @@
     },
     {
       "produit": "Shampooing",
-      "format": "600 ml",
+      "format": "aucune offre en decembre",
       "unite": "L",
       "leclerc": null,
-      "intermarche": {
-        "prix": 2.19,
-        "pu": 3.65,
-        "promo": true,
-        "fin": "2026-11-22",
-        "libelle": "Timotei 600 ml — record 3,65 €/L mais expire le 22/11, hors semaine"
-      },
+      "intermarche": null,
       "superu": null,
-      "moins_cher": "intermarche",
+      "moins_cher": null,
       "record_pu": 3.65
     },
     {
       "produit": "Savon",
-      "format": "format non précisé",
-      "unite": "unite",
+      "format": "aucune offre, negation Intermarche",
+      "unite": "L",
       "leclerc": null,
       "intermarche": null,
       "superu": null,
@@ -290,52 +330,52 @@
       "record_pu": null
     },
     {
-      "produit": "Comté",
+      "produit": "Comte",
+      "format": "a la coupe / 400 g",
+      "unite": "kg",
+      "leclerc": {
+        "prix": 14.25,
+        "pu": 14.25,
+        "promo": false,
+        "fin": null,
+        "libelle": "prix courant drive, releve a la main"
+      },
+      "intermarche": {
+        "prix": 14.51,
+        "pu": 14.51,
+        "promo": false,
+        "fin": null,
+        "libelle": "prix courant drive, releve a la main"
+      },
+      "superu": {
+        "prix": 6.9,
+        "pu": 17.25,
+        "promo": true,
+        "fin": "2026-12-13",
+        "libelle": "JuraFlore 400 g, prix de marche"
+      },
+      "moins_cher": "leclerc",
+      "record_pu": 14.25
+    },
+    {
+      "produit": "Fromage rape",
       "format": "1 kg",
       "unite": "kg",
       "leclerc": null,
       "intermarche": {
-        "prix": 17.9,
-        "pu": 17.9,
-        "promo": true,
-        "fin": "2026-12-06",
-        "libelle": "Jurafloré Comté 1 kg — prix normal catalogue, le drive fait 14,51 €/kg"
-      },
-      "superu": {
-        "prix": 21.49,
-        "pu": null,
-        "promo": true,
-        "fin": "2026-11-29",
-        "libelle": "Jurafloré Comté AOP, format non précisé"
-      },
-      "moins_cher": "intermarche",
-      "record_pu": 14.25
-    },
-    {
-      "produit": "Fromage râpé",
-      "format": "500 g",
-      "unite": "kg",
-      "leclerc": {
-        "prix": 3.29,
-        "pu": 6.58,
-        "promo": true,
-        "fin": "2026-11-28",
-        "libelle": "Valmartin Le râpé du Crémier 500 g, sans condition de carte"
-      },
-      "intermarche": {
-        "prix": 1.91,
-        "pu": 9.1,
-        "promo": true,
-        "fin": "2026-12-06",
-        "libelle": "Pâturages emmental râpé 210 g — piège du petit format, à éviter"
+        "prix": 7.89,
+        "pu": 7.89,
+        "promo": false,
+        "fin": null,
+        "libelle": "Paturages 1 kg, prix courant"
       },
       "superu": null,
-      "moins_cher": "leclerc",
+      "moins_cher": null,
       "record_pu": 5.64
     },
     {
-      "produit": "Carotte râpée",
-      "format": "format non précisé",
+      "produit": "Carotte rapee",
+      "format": "aucune offre, le sac entier bat le rape",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -345,7 +385,7 @@
     },
     {
       "produit": "Mozzarella",
-      "format": "râpée 500 g",
+      "format": "aucune offre en boule ou bloc",
       "unite": "kg",
       "leclerc": null,
       "intermarche": null,
@@ -354,62 +394,28 @@
       "record_pu": 4.75
     },
     {
-      "produit": "Café",
-      "format": "grains 1 kg",
+      "produit": "Cafe",
+      "format": "aucune offre dans les 3 drives",
       "unite": "kg",
-      "leclerc": {
-        "prix": 12.49,
-        "pu": 12.49,
-        "promo": true,
-        "fin": "2026-11-21",
-        "libelle": "ABSOLU grains 1000 g — expire le 21/11, avant la semaine"
-      },
+      "leclerc": null,
       "intermarche": null,
       "superu": null,
-      "moins_cher": "leclerc",
+      "moins_cher": null,
       "record_pu": 12.49
-    },
-    {
-      "produit": "Lait",
-      "format": "8 x 1 L",
-      "unite": "L",
-      "leclerc": null,
-      "intermarche": {
-        "prix": 7.0,
-        "pu": 0.875,
-        "promo": true,
-        "fin": "2026-12-06",
-        "libelle": "Pâturages lait UHT demi-écrémé 8 L"
-      },
-      "superu": null,
-      "moins_cher": "intermarche",
-      "record_pu": 0.85
     }
   ],
   "opportunites": [
     {
-      "titre": "Lessive Génie liquide Fleurs fraîches, 44 lavages",
-      "magasin": "Intermarché Montauban",
-      "qui": "maison",
-      "prix": 3.99,
-      "pu": 0.0907,
-      "unite": "lavage",
-      "fin": "2026-11-29",
-      "niveau": "record",
-      "alerte": true,
-      "note": "Record du registre, reconduit et confirmé. Au lieu de 6,65 €, ratio 1,67 sain. Zéro détour, toute la semaine. Faire le stock."
-    },
-    {
-      "titre": "Netto Steaks Hachés Façon Bouchère 520 g (x4)",
-      "magasin": "Netto Langueux",
+      "titre": "Cafe L'OR Selection Grains 1 kg",
+      "magasin": "Aldi Ploufragan",
       "qui": "thomas",
-      "prix": 7.09,
-      "pu": 13.63,
+      "prix": 12.64,
+      "pu": 12.64,
       "unite": "kg",
-      "fin": "2026-11-23",
-      "niveau": "record",
+      "fin": "2026-12-07",
+      "niveau": "bon",
       "alerte": true,
-      "note": "Nouveau record steak haché (ancien 15,61 €/kg), fin de sept semaines sèches. Au lieu de 7,89 €. DERNIER JOUR LUNDI 23."
+      "note": "Au lieu de 18,06 euros, ratio 1,43 sain. 2e meilleur prix sec jamais releve, sous le seuil de 13 euros/kg : la consigne d'abstention est levee. Reserve : la fiche porte la mention 'Lot de 2', le prix au kilo pourrait etre encore meilleur si 12,64 couvre 2 kg. Verifier en rayon."
     },
     {
       "titre": "Lardons Le Marsigny 500 g",
@@ -421,70 +427,58 @@
       "fin": "2026-11-30",
       "niveau": "record",
       "alerte": true,
-      "note": "Nouveau record lardons (ancien 7,75 €/kg chez Netto, sans grammage publié). Prix d'appel récurrent chez Aldi. À partir du mardi 24."
+      "note": "Record egale, grammage publie, verifie deux fois. DERNIER JOUR lundi 30/11. Prix d'appel recurrent d'Aldi (3,45 euros en juin, septembre et novembre) : il reviendra si le passage du lundi est impossible."
     },
     {
-      "titre": "Pommes de France bicolores, sac 3 kg",
-      "magasin": "Lidl Ploufragan ou Langueux",
+      "titre": "Buche de chevre Chevrefin 400 g",
+      "magasin": "Aldi Ploufragan",
       "qui": "thomas",
-      "prix": 2.99,
-      "pu": 1.0,
+      "prix": 3.75,
+      "pu": 9.38,
       "unite": "kg",
-      "fin": "2026-11-25",
+      "fin": "2026-12-07",
       "niveau": "record",
       "alerte": true,
-      "note": "Objectif de 1,00 €/kg pile atteint, record égalé. Vendu sous le cours de gros, qui est en hausse de 40 % sur trois mois. Jusqu'au mercredi 25."
+      "note": "Record egale, confirme en double passe (dates 01 au 07/12, enseigne Aldi). Reference qui revient chez Aldi : aout, fin octobre, et de retour le 1er decembre."
     },
     {
-      "titre": "Chèvre frais Chêne d'Argent 200 g",
-      "magasin": "Lidl Ploufragan ou Langueux",
-      "qui": "thomas",
-      "prix": 1.51,
-      "pu": 7.55,
-      "unite": "kg",
-      "fin": "2026-11-25",
-      "niveau": "record",
-      "alerte": true,
-      "note": "Record chèvre frais égalé, au lieu de 1,89 €. Produit différent de la bûche (record 9,38 €/kg). Jusqu'au mercredi 25."
-    },
-    {
-      "titre": "Jambon cuit à l'étouffée 1 kg",
-      "magasin": "Intermarché Montauban",
+      "titre": "Jambon cuit a l'etouffee 1 kg",
+      "magasin": "Intermarche Montauban",
       "qui": "maison",
       "prix": 8.96,
       "pu": 8.96,
       "unite": "kg",
       "fin": "2026-12-06",
-      "niveau": "bon",
-      "alerte": false,
-      "note": "2e meilleur prix jamais relevé en tranches, à 3 centimes du record. Au lieu de 11,20 €, ratio 1,25. Couvre toute la semaine."
+      "niveau": "record",
+      "alerte": true,
+      "note": "Au lieu de 11,20 euros, ratio 1,25 sain. 2e meilleur prix jambon jamais releve, a 3 centimes du record, et le plus utile car format 1 kg disponible au drive. Zero detour, court toute la semaine."
     },
     {
-      "titre": "Pâturages lait UHT demi-écrémé 8 x 1 L",
-      "magasin": "Intermarché Montauban",
-      "qui": "maison",
-      "prix": 7.0,
-      "pu": 0.875,
-      "unite": "L",
-      "fin": "2026-12-06",
-      "niveau": "bon",
-      "alerte": false,
-      "note": "Meilleur prix au litre de la semaine, sous le prix courant du drive Leclerc. Mais 7,00 € est le prix récurrent de ce format : pas un prix de stockage."
-    },
-    {
-      "titre": "Poulet fermier Label Rouge 1,4 kg",
-      "magasin": "Intermarché Montauban",
-      "qui": "maison",
-      "prix": 7.99,
-      "pu": 5.71,
+      "titre": "Poire 1 kg",
+      "magasin": "Lidl Ploufragan ou Langueux",
+      "qui": "thomas",
+      "prix": 1.79,
+      "pu": 1.79,
       "unite": "kg",
-      "fin": "2026-11-29",
-      "niveau": "bon",
-      "alerte": false,
-      "note": "Un Label Rouge vaut 7 à 9 €/kg : 5,71 €/kg est bien placé. Toute la semaine, zéro détour."
+      "fin": "2026-12-02",
+      "niveau": "record",
+      "alerte": true,
+      "note": "Record egale, au lieu de 2,49 euros. Fenetre courte : du lundi 30/11 au mercredi 02/12."
     },
     {
-      "titre": "Filets de poulet frais 1 kg",
+      "titre": "Lessive Genie liquide Fleurs fraiches x44 lavages",
+      "magasin": "Intermarche Montauban",
+      "qui": "maison",
+      "prix": 3.99,
+      "pu": 0.0907,
+      "unite": "lavage",
+      "fin": "2026-11-29",
+      "niveau": "record",
+      "alerte": false,
+      "note": "LE RECORD MEURT DIMANCHE 29/11 et n'est PAS reconduit (verifie sur trois sources). Derniere chance ce week-end. Aucune lessive de la semaine du 30/11 n'en approche : la meilleure est a 0,1031 euros/lavage."
+    },
+    {
+      "titre": "Filets de poulet 1 kg",
       "magasin": "Aldi Ploufragan",
       "qui": "thomas",
       "prix": 8.39,
@@ -493,58 +487,82 @@
       "fin": "2026-11-30",
       "niveau": "bon",
       "alerte": false,
-      "note": "Au lieu de 9,49 €. La fenêtre sous 10 €/kg reste ouverte chez Aldi. Gamme frais, à ne pas confondre avec les sacs surgelés."
+      "note": "Au lieu de 9,49 euros. Sous le seuil de 10 euros/kg. Bien au-dessus du cours de gros frais (5,70 euros/kg), donc pas le profil du piege surgele. Dernier jour lundi 30/11."
     },
     {
-      "titre": "Café en grains Gourmet Finest 1 kg",
-      "magasin": "Aldi Ploufragan",
+      "titre": "Pomme U sac 2 kg",
+      "magasin": "Hyper U Yffiniac",
       "qui": "thomas",
-      "prix": 12.99,
-      "pu": 12.99,
+      "prix": 2.15,
+      "pu": 1.08,
       "unite": "kg",
-      "fin": "2026-11-23",
+      "fin": "2026-12-06",
       "niveau": "bon",
       "alerte": false,
-      "note": "Sous 13 €/kg, donc achetable hors mécanique de remboursement. Seul café disponible dans la semaine, et seulement le lundi 23."
+      "note": "Quasi-record (record 1,00 euros/kg). Vendu sous la moitie du cours de gros, qui est a 2,50 euros/kg et en hausse de 42 pour cent : pur prix d'appel. Yffiniac est a 7 km avant Ploufragan, donc zero detour."
     },
     {
-      "titre": "Valmartin Le râpé du Crémier 500 g",
-      "magasin": "E.Leclerc Pleumeleuc",
+      "titre": "Courgette 1 kg",
+      "magasin": "Netto Langueux",
+      "qui": "thomas",
+      "prix": 1.69,
+      "pu": 1.69,
+      "unite": "kg",
+      "fin": "2026-11-30",
+      "niveau": "bon",
+      "alerte": false,
+      "note": "Sous le seuil de 1,80 euros/kg. Gros a 1,25 euros/kg : bon sans etre exceptionnel. Dernier jour lundi 30/11."
+    },
+    {
+      "titre": "Salade iceberg",
+      "magasin": "Super U Breteil",
       "qui": "charlotte",
-      "prix": 3.29,
-      "pu": 6.58,
-      "unite": "kg",
-      "fin": "2026-11-28",
+      "prix": 0.95,
+      "pu": null,
+      "unite": "piece",
+      "fin": "2026-12-06",
       "niveau": "bon",
       "alerte": false,
-      "note": "Le choix le plus sûr du rayon râpé : sous le seuil de 8 €/kg, sans condition de carte, toute la semaine."
+      "note": "PREMIERE offre salade jamais relevee par cette veille. Format annonce 250 g, non fiable, donc pas de prix au kilo. Couvre toute la semaine."
     },
     {
-      "titre": "Les Croisés emmental râpé 750 g, -20 % carte",
-      "magasin": "E.Leclerc Pleumeleuc",
+      "titre": "Pomme U sac 2 kg",
+      "magasin": "Super U Breteil",
       "qui": "charlotte",
-      "prix": 4.76,
-      "pu": 6.35,
+      "prix": 2.49,
+      "pu": 1.25,
       "unite": "kg",
-      "fin": "2026-11-28",
+      "fin": "2026-12-06",
       "niveau": "bon",
       "alerte": false,
-      "note": "Meilleur €/kg du rayon râpé cette semaine, au lieu de 5,95 €. Remise conditionnée à la carte Leclerc, à vérifier en caisse."
+      "note": "Version Breteil, un peu plus chere que celle d'Yffiniac. A prendre avec le retrait du mardi pour cumuler les 10 pour cent en euros Carte U."
     },
     {
-      "titre": "Avocat à la pièce",
+      "titre": "Avocat a la piece",
       "magasin": "Lidl Ploufragan ou Langueux",
       "qui": "thomas",
-      "prix": 0.65,
-      "pu": 0.65,
+      "prix": 0.69,
+      "pu": 0.69,
       "unite": "piece",
-      "fin": "2026-11-25",
+      "fin": "2026-12-09",
       "niveau": "bon",
       "alerte": false,
-      "note": "Record confirmé, au lieu de 0,99 €. À grouper avec les pommes et le chèvre frais du même catalogue."
+      "note": "Au lieu de 0,99 euros. Quasi-record (0,65 euros/piece). A partir du jeudi 03/12."
     },
     {
-      "titre": "Le Marsigny jambon supérieur en tranches 320 g",
+      "titre": "Banane 1 kg",
+      "magasin": "Intermarche Montauban",
+      "qui": "maison",
+      "prix": 0.95,
+      "pu": 0.95,
+      "unite": "kg",
+      "fin": "2026-12-13",
+      "niveau": "bon",
+      "alerte": false,
+      "note": "Prix normal de promo (plancher 0,79 euros/kg), mais au drive sans detour. A partir du 01/12."
+    },
+    {
+      "titre": "Jambon superieur Le Marsigny 320 g",
       "magasin": "Aldi Ploufragan",
       "qui": "thomas",
       "prix": 2.89,
@@ -553,10 +571,46 @@
       "fin": "2026-11-30",
       "niveau": "bon",
       "alerte": false,
-      "note": "3e meilleur prix en tranches. Format récurrent au même prix. Moins bon que le 1 kg d'Intermarché à 8,96 €/kg."
+      "note": "3e meilleur prix jambon en tranches. Format recurrent chez Aldi. Dernier jour lundi 30/11. Le 1 kg a 8,96 euros de Montauban reste meilleur et plus pratique."
     },
     {
-      "titre": "OMO lessive liquide 3 x 42 lavages",
+      "titre": "Eminces de filet de poulet 1 kg",
+      "magasin": "Lidl Ploufragan ou Langueux",
+      "qui": "thomas",
+      "prix": 8.99,
+      "pu": 8.99,
+      "unite": "kg",
+      "fin": "2026-12-09",
+      "niveau": "bon",
+      "alerte": false,
+      "note": "Sous le seuil de 10 euros/kg, marque rayon frais Lidl. A partir du jeudi 03/12."
+    },
+    {
+      "titre": "Thon NIXE MSC 740 g",
+      "magasin": "Lidl Ploufragan ou Langueux",
+      "qui": "thomas",
+      "prix": 5.49,
+      "pu": 7.42,
+      "unite": "kg",
+      "fin": "2026-12-09",
+      "niveau": "bon",
+      "alerte": false,
+      "note": "7,42 euros/kg en poids BRUT. Estimation personnelle a environ 10,56 euros/kg net egoutte si ce sont 4 boites de 185 g : le net egoutte n'est pas publie. Meilleur thon de la semaine. A partir du 03/12."
+    },
+    {
+      "titre": "Nutella 1 kg, 50 pour cent sur le 2e pot",
+      "magasin": "Lidl Ploufragan ou Langueux",
+      "qui": "thomas",
+      "prix": 11.07,
+      "pu": 5.54,
+      "unite": "kg",
+      "fin": "2026-12-09",
+      "niveau": "bon",
+      "alerte": false,
+      "note": "Calcul sur la quantite reellement achetee : 7,38 + 3,69 = 11,07 euros les 2 kg. Environ 25 pour cent sous le prix courant. Le 400 g du 26/11 au 02/12 est 16 pour cent plus cher au kilo : mieux vaut attendre jeudi."
+    },
+    {
+      "titre": "Lessive OMO liquide 3 x 42 lavages",
       "magasin": "Netto Langueux",
       "qui": "thomas",
       "prix": 12.99,
@@ -565,22 +619,46 @@
       "fin": "2026-11-30",
       "niveau": "bon",
       "alerte": false,
-      "note": "Sous le seuil de 0,12 €/lavage, mais 2,45 €/L et un ticket de 12,99 €. Loin derrière le Génie : à ne prendre que si le Génie manque."
+      "note": "126 lavages, 2,45 euros/L. Sous le seuil de 0,12 euros/lavage, mais loin du record Genie a 0,0907. La seule lessive correcte de la semaine cible, et seulement le lundi 30/11."
     },
     {
-      "titre": "Paic liquide vaisselle 1,5 L",
-      "magasin": "Aldi Ploufragan",
-      "qui": "thomas",
-      "prix": 2.79,
-      "pu": 1.86,
-      "unite": "L",
-      "fin": "2026-11-23",
+      "titre": "Papier toilette Action Pure Soft 24 rouleaux 2 plis 180 feuilles",
+      "magasin": "Action Pace ou Tregueux",
+      "qui": "charlotte",
+      "prix": 4.84,
+      "pu": 0.2017,
+      "unite": "rouleau",
+      "fin": null,
+      "niveau": "bon",
+      "alerte": false,
+      "note": "PRIX PERMANENT, pas une promo. A egalite a la feuille avec le record Renova (0,00112 contre 0,00110 euros). Intermarche, Netto et Super U sont tous a zero offre papier toilette cette semaine : c'est la seule valeur sure du poste."
+    },
+    {
+      "titre": "Croquettes Purina ONE chat sterilise, lot 2 x 1,5 kg",
+      "magasin": "Intermarche Montauban",
+      "qui": "maison",
+      "prix": 9.45,
+      "pu": 3.15,
+      "unite": "kg",
+      "fin": "2026-12-13",
       "niveau": "a_surveiller",
       "alerte": false,
-      "note": "Sous le seuil de 2 €/L mais au-dessus du record de 1,58 €/L. Un seul jour utile, le lundi 23."
+      "note": "Reconstruit : 6,75 euros l'unite puis 2,70 euros la seconde, soit 9,45 euros les 3 kg. Le '-50 pour cent' affiche est un ratio 2,00 pile, donc un lot, pas une remise. Bon mais pas record (record 2,45 euros/kg) ; seule offre croquettes solidement datee de la semaine."
     },
     {
-      "titre": "Netto Steaks Hachés 1 kg",
+      "titre": "Croquettes Ultima 7,5 kg",
+      "magasin": "Maxi Zoo Langueux",
+      "qui": "thomas",
+      "prix": 23.79,
+      "pu": 3.17,
+      "unite": "kg",
+      "fin": "2026-12-06",
+      "niveau": "a_surveiller",
+      "alerte": false,
+      "note": "Au lieu de 33,99 euros. SOURCE UNIQUE et poids DEDUIT du prix au kilo, non affiche : a confirmer sur l'etiquette. Equivalent au Purina de Montauban au kilo, mais sur un gros format."
+    },
+    {
+      "titre": "Steaks haches Netto 1 kg (x10)",
       "magasin": "Netto Langueux",
       "qui": "thomas",
       "prix": 11.59,
@@ -589,19 +667,31 @@
       "fin": "2026-11-30",
       "niveau": "a_surveiller",
       "alerte": false,
-      "note": "Au lieu de 12,98 €, ratio sain. Serait un record écrasant, MAIS aucune source ne dit frais ou surgelé et le format 1 kg est celui de la boîte surgelée. Vérifier l'étiquette en rayon avant d'acheter."
+      "note": "NON ACTE. A 11,59 euros/kg ce serait un record ecrasant, mais la double passe sur les deux fiches n'a trouve AUCUNE mention frais ou surgele, aucun historique de prix, et deux prix habituels contradictoires (12,88 et 12,98 euros). Le 1 kg est le format typique de la boite surgelee. A verifier en rayon avant d'y croire."
     },
     {
-      "titre": "Nutella 400 g, 2e pot à -50 %",
-      "magasin": "Lidl Ploufragan ou Langueux",
+      "titre": "Yaourt a boire Milsani 800 g",
+      "magasin": "Aldi Ploufragan",
       "qui": "thomas",
-      "prix": 5.28,
-      "pu": 6.6,
+      "prix": 1.79,
+      "pu": 2.24,
       "unite": "kg",
-      "fin": "2026-12-02",
+      "fin": "2026-11-30",
       "niveau": "a_surveiller",
       "alerte": false,
-      "note": "Prix pour DEUX pots (3,52 € + 1,76 €), contre 8,80 €/kg au prix normal. Sans objet à un seul pot. À partir du jeudi 26."
+      "note": "Moyen (record 1,59 euros/kg), mais c'est le meilleur yaourt a boire de la semaine : le YOP de Super U est a 2,88 euros/kg. Dernier jour lundi 30/11."
+    },
+    {
+      "titre": "Carotte U sac 1,5 kg",
+      "magasin": "Hyper U Yffiniac",
+      "qui": "thomas",
+      "prix": 1.99,
+      "pu": 1.33,
+      "unite": "kg",
+      "fin": "2026-12-13",
+      "niveau": "a_surveiller",
+      "alerte": false,
+      "note": "Loin du record (0,85 euros/kg) mais c'est la seule carotte correcte de la semaine, et le sac entier bat toujours la carotte rapee. A partir du 01/12."
     }
   ]
 }
